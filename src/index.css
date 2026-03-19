@@ -65,10 +65,12 @@
     font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
     background: radial-gradient(circle at top, #19324f 0%, #07111d 42%, #02060b 100%);
     min-height: 100vh;
+    line-height: 1.5;
   }
 
   html {
     background: #02060b;
+    font-size: 17.5px;
   }
 
   ::-webkit-scrollbar {
@@ -196,5 +198,27 @@
 
   .animate-typing-dot {
     animation: typing-dot 1.2s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .text-xs {
+    font-size: 0.825rem;
+    line-height: 1.35rem;
+  }
+
+  .text-sm {
+    font-size: 0.975rem;
+    line-height: 1.5rem;
+  }
+
+  .text-\[10px\] {
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+  }
+
+  .text-\[11px\] {
+    font-size: 0.8125rem;
+    line-height: 1.2rem;
   }
 }
