@@ -37,7 +37,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
             {recommendation && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
                 <p className="text-xs uppercase tracking-widest text-slate-400">Recommendation</p>
-                <p className="mt-1 font-semibold capitalize text-slate-50">{recommendation.status.replaceAll('_', ' ')}</p>
+                <p className="mt-1 font-semibold capitalize text-slate-50">{recommendation.status.split('_').join(' ')}</p>
                 <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason}</p>
               </div>
             )}
