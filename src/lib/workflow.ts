@@ -16,6 +16,18 @@ export interface Escalation {
   blocking: boolean;
 }
 
+export interface PolicyTraceEntry {
+  id: string;
+  category: string;
+  status: 'passed' | 'failed' | 'needs_approval' | 'warning';
+  title: string;
+  summary: string;
+  detail: string;
+  rule: string;
+  approver: string | null;
+  blocking: boolean;
+}
+
 export interface WorkflowRequestJson {
   request_id: string;
   category_l1: string;
@@ -44,14 +56,31 @@ export interface EngineOutput {
     completeness: string;
     issues_detected: ValidationIssue[];
   };
+  policy_evaluation: {
+    approval_threshold: {
+      rule_applied: string;
+      basis: string;
+      quotes_required: number;
+      approvers: string[];
+      deviation_approval: string | null;
+    };
+    preferred_supplier: Record<string, unknown> | null;
+    eligible_supplier_count?: number;
+    category_rules_applied: string[];
+    geography_rules_applied: string[];
+  };
+  policy_trace: PolicyTraceEntry[];
   supplier_shortlist: Array<Record<string, unknown>>;
   escalations: Escalation[];
   recommendation: {
     status: string;
     reason: string;
     preferred_supplier_if_resolved?: string;
+    recommended_supplier?: string;
+    rationale?: string;
     approvals_required?: Array<{ approver: string; reason: string; rule: string }>;
   };
+  audit_trail?: Record<string, unknown>;
 }
 
 export interface WorkflowResponse {

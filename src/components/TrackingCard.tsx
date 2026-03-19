@@ -68,7 +68,7 @@ const TrackingCard = ({ consignment, onClose }: Props) => {
         </div>
         <div className="flex items-center gap-1">
           <Package className="w-3 h-3" />
-          <span>{consignment.units} laptops</span>
+          <span>{consignment.units} units</span>
         </div>
         <span className="font-mono">#{consignment.orderId}</span>
       </div>

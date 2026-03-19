@@ -33,7 +33,7 @@ const Index = () => {
       <main className="flex flex-col items-center justify-center min-h-screen px-4 pt-16">
         <div className="text-center max-w-4xl mx-auto space-y-8">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight leading-tight text-foreground">
-            Committed to Deliver{' '}
+            Committed to Delivering{' '}
             <span className="text-primary">Innovative</span>{' '}
             Procurement Solutions
           </h1>

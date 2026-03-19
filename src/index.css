@@ -142,4 +142,19 @@
   .animate-hexagon {
     animation: hexagon-spin 2s linear infinite;
   }
+
+  @keyframes typing-dot {
+    0%, 60%, 100% {
+      opacity: 0.35;
+      transform: translateY(0);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+  }
+
+  .animate-typing-dot {
+    animation: typing-dot 1.2s ease-in-out infinite;
+  }
 }

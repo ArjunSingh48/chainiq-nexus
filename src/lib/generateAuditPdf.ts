@@ -183,6 +183,13 @@ export function generateAuditPdf(data: AuditData): void {
       y = addWrappedText(doc, `! ${esc.rule}: ${esc.trigger}`, 18, y, 168);
     }
   }
+  if (engine?.policy_trace?.length) {
+    y += 2;
+    y = addField(doc, 'Policy Checks', engine.policy_trace.length.toString(), y);
+    for (const entry of engine.policy_trace.slice(0, 8)) {
+      y = addWrappedText(doc, `[${entry.status}] ${entry.title}: ${entry.detail}`, 18, y, 168);
+    }
+  }
   y += 4;
 
   // 7. ORDER & DELIVERY

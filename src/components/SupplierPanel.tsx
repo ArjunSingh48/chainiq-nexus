@@ -1,6 +1,7 @@
 import { Supplier } from '@/data/suppliers';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { WorkflowResponse } from '@/lib/workflow';
+import type { PolicyTraceEntry, WorkflowResponse } from '@/lib/workflow';
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   suppliers: Supplier[];
@@ -16,10 +17,29 @@ const formatMoney = (amount: number | null | undefined, currency: string) => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount);
 };
 
+const traceToneMap: Record<PolicyTraceEntry['status'], string> = {
+  passed: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100',
+  failed: 'border-red-400/30 bg-red-500/10 text-red-100',
+  needs_approval: 'border-amber-400/30 bg-amber-500/10 text-amber-100',
+  warning: 'border-orange-400/30 bg-orange-500/10 text-orange-100',
+};
+
+const traceLabelMap: Record<PolicyTraceEntry['status'], string> = {
+  passed: 'Passed',
+  failed: 'Failed',
+  needs_approval: 'Needs approval',
+  warning: 'Warning',
+};
+
 const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
   const recommendation = workflow?.engine_output?.recommendation;
   const validation = workflow?.engine_output?.validation;
+  const policyTrace = workflow?.engine_output?.policy_trace ?? [];
   const request = workflow?.request;
+
+  const passedCount = policyTrace.filter((entry) => entry.status === 'passed').length;
+  const failedCount = policyTrace.filter((entry) => entry.status === 'failed').length;
+  const approvalCount = policyTrace.filter((entry) => entry.status === 'needs_approval').length;
 
   return (
     <div className="glass-card flex h-full flex-col border-l border-white/10">
@@ -30,20 +50,53 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
               <p className="text-xs uppercase tracking-widest text-slate-400">Request</p>
               <p className="mt-1 font-semibold text-slate-50">{request.category_l2}</p>
               <p className="text-slate-300">
-                Qty {request.quantity ?? 'n/a'} · {formatMoney(request.budget_amount, request.currency)} · {request.delivery_countries.map(cc => <span>{cc}<img src={flagUrl(cc)} className="h-4 w-5 rounded-sm object-cover inline" /></span>)}
+                Qty {request.quantity ?? 'n/a'} · {formatMoney(request.budget_amount, request.currency)} ·{' '}
+                {request.delivery_countries.map((cc) => (
+                  <span key={cc} className="mr-1 inline-flex items-center gap-1">
+                    {cc}
+                    <img src={flagUrl(cc)} alt={cc} className="inline h-4 w-5 rounded-sm object-cover" />
+                  </span>
+                ))}
               </p>
             </div>
             {recommendation && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
                 <p className="text-xs uppercase tracking-widest text-slate-400">Recommendation</p>
                 <p className="mt-1 font-semibold capitalize text-slate-50">{recommendation.status.split('_').join(' ')}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason ?? recommendation.rationale}</p>
               </div>
             )}
             {validation && validation.issues_detected.length > 0 && (
               <div className="rounded-lg border border-amber-400/40 bg-amber-500/15 p-3">
                 <p className="text-xs uppercase tracking-widest text-amber-100">Validation</p>
                 <p className="mt-1 text-xs leading-5 text-amber-50">{validation.issues_detected[0].description}</p>
+              </div>
+            )}
+            {policyTrace.length > 0 && (
+              <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
+                <p className="text-xs uppercase tracking-widest text-slate-400">Policy Trace</p>
+                <p className="mt-1 text-xs text-slate-300">
+                  Passed {passedCount} · Needs approval {approvalCount} · Failed {failedCount}
+                </p>
+                <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
+                  {policyTrace.map((entry) => (
+                    <div key={entry.id} className={`rounded-lg border p-3 ${traceToneMap[entry.status]}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest">{entry.title}</p>
+                          <p className="mt-1 text-sm font-medium">{entry.summary}</p>
+                        </div>
+                        <span className="rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
+                          {traceLabelMap[entry.status]}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-current/90">{entry.detail}</p>
+                      <p className="mt-2 text-[11px] uppercase tracking-widest text-current/70">
+                        Rule {entry.rule}{entry.approver ? ` · ${entry.approver}` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -72,6 +125,9 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
                 <span className="text-xs font-bold text-primary">#{i + 1}</span>
                 <img src={flagUrl(s.countryCode)} alt={s.country} className="h-4 w-5 rounded-sm object-cover" />
                 <span className="text-sm font-semibold text-slate-50 transition-colors group-hover:text-primary">{s.name}</span>
+                {s.policyCompliant === false && (
+                  <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
+                )}
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300">
                 <span>ESG: <span className="font-medium text-accent">{s.esgScore ?? 'n/a'}</span></span>

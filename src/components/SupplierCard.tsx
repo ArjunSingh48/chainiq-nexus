@@ -1,5 +1,5 @@
 import { Supplier, placeOrder, restrictedRegions } from '@/data/suppliers';
-import { X } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -75,7 +75,12 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresAp
         <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-4 h-4" />
         </button>
-        <h3 className="mb-1 text-lg font-bold text-foreground">{supplier.name}</h3>
+        <div className="mb-1 flex items-center gap-2 pr-6">
+          <h3 className="text-lg font-bold text-foreground">{supplier.name}</h3>
+          {supplier.policyCompliant === false && (
+            <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
+          )}
+        </div>
         <p className="mb-3 text-sm text-muted-foreground">{supplier.country}</p>
         <div className="mb-4 grid grid-cols-3 gap-2 text-sm">
           <div className="glass-card rounded-md p-2 text-center">
@@ -113,12 +118,17 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresAp
             Supplier was excluded or is not currently actionable.
           </div>
         )}
+        {supplier.policyCompliant === false && (
+          <div className="mb-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-center text-xs font-medium text-amber-100">
+            Policy warning: this supplier did not pass all checks.
+          </div>
+        )}
         <div className="flex gap-2">
           <button onClick={() => setShowReason(true)} className="flex-1 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/70">
             Recommendation
           </button>
           <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
-            {ordering ? 'Placing...' : 'Place Order'}
+            {ordering ? 'Placing...' : requiresApproval ? 'Request Approval' : 'Place Order'}
           </button>
         </div>
       </div>
