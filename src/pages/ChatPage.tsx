@@ -114,6 +114,7 @@ const buildInterpretedSummary = (workflow: WorkflowResponse) => {
 };
 
 const ChatPage = () => {
+  const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('chat');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowResponse | null>(null);
