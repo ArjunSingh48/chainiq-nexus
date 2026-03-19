@@ -117,6 +117,7 @@ const ChatPage = () => {
         onSubmit={handleSubmit}
         phase={phase}
         loading={showAnalysis}
+        onMessagesChange={setChatMessages}
       />
 
       {phase !== 'chat' && (
