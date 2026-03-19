@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, ChevronDown, ChevronUp, TrendingUp, CheckCircle2, 
 import ProqAILogo from '@/components/ProqAILogo';
 import { BarChart, CursorTooltip, useCursorTooltip, riskColors } from '@/components/RiskDonutChart';
 import { weeklyRequests, weeklyMetrics, averageRisks } from '@/data/auditMockData';
-import { generateAuditPdf } from '@/lib/generateAuditPdf';
+import { generateWeeklyPdf } from '@/lib/generateWeeklyPdf';
 
 const statusDot: Record<string, string> = {
   approved: 'bg-accent',
@@ -19,10 +19,7 @@ const AuditDashboardSupervisor = () => {
   const [requests, setRequests] = useState(weeklyRequests);
 
   const handleDownload = () => {
-    generateAuditPdf({
-      workflow: null, suppliers: [], top10: [], selectedSupplier: null,
-      notifications: [], consignments: [], chatMessages: [], sessionId: null,
-    });
+    generateWeeklyPdf(requests);
   };
 
   const handleStatus = (id: string, status: 'approved' | 'rejected') => {
@@ -85,7 +82,11 @@ const AuditDashboardSupervisor = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {req.status !== 'pending' && (
+                    {req.status === 'pending' ? (
+                      <span className="text-xs font-semibold uppercase tracking-wider text-yellow-500">
+                        PENDING
+                      </span>
+                    ) : (
                       <span className={`text-xs font-semibold uppercase tracking-wider ${req.status === 'approved' ? 'text-accent' : 'text-destructive'}`}>
                         {req.status}
                       </span>
