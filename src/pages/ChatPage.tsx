@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { suppliers as initialSuppliers, Supplier, getTop10, applyConstraints } from '@/data/suppliers';
+import { suppliers as initialSuppliers, Supplier, getTop10, applyConstraints, defaultNotifications, Notification } from '@/data/suppliers';
 import ChatInterface from '@/components/ChatInterface';
 import GlobeView from '@/components/GlobeView';
 import SupplierPanel from '@/components/SupplierPanel';
 import SupplierCard from '@/components/SupplierCard';
 import AnalysisOverlay from '@/components/AnalysisOverlay';
-import ChainIQLogo from '@/components/ChainIQLogo';
+import ProqAILogo from '@/components/ProqAILogo';
 import NotificationBell from '@/components/NotificationBell';
+import SettingsPanel, { SettingsState } from '@/components/SettingsPanel';
 
 type Phase = 'chat' | 'globe' | 'constraints';
 
@@ -18,6 +19,14 @@ const ChatPage = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications);
+  const [settings, setSettings] = useState<SettingsState>({
+    conflicts: false,
+    blockages: false,
+    restrictions: false,
+    regulatoryConstraints: false,
+  });
+  const [nextNotifId, setNextNotifId] = useState(100);
 
   // Red → grey transition every 3 seconds
   useEffect(() => {
@@ -32,6 +41,21 @@ const ChatPage = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, [phase]);
+
+  // Settings toggles: make some suppliers restricted
+  useEffect(() => {
+    setSuppliers(prev => prev.map(s => {
+      const shouldRestrict =
+        (settings.conflicts && ['BR', 'ZA', 'IN'].includes(s.countryCode)) ||
+        (settings.blockages && ['AE', 'MX'].includes(s.countryCode)) ||
+        (settings.restrictions && s.rank > 20);
+      
+      if (shouldRestrict && s.accessibility === 'open') {
+        return { ...s, accessibility: 'restricted' as const };
+      }
+      return s;
+    }));
+  }, [settings.conflicts, settings.blockages, settings.restrictions]);
 
   // Populate panel after entering globe phase
   useEffect(() => {
@@ -69,13 +93,29 @@ const ChatPage = () => {
     setFocusPoint({ lat: supplier.lat, lng: supplier.lng });
   }, []);
 
+  const addNotification = useCallback((supplier: Supplier, status: 'success' | 'pending') => {
+    const notif: Notification = {
+      id: nextNotifId,
+      type: status === 'success' ? 'approved' : 'pending',
+      message: status === 'success'
+        ? `APPROVED: Order to ${supplier.name} confirmed`
+        : `PENDING: Order to ${supplier.name} requires review`,
+      time: 'Just now',
+    };
+    setNextNotifId(prev => prev + 1);
+    setNotifications(prev => [notif, ...prev]);
+  }, [nextNotifId]);
+
   return (
-    <div className="h-screen w-screen bg-background overflow-hidden relative">
+    <div className="h-screen w-screen overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #e6f2ff 0%, #cce7ff 100%)' }}>
       {/* Header for globe view */}
       {phase !== 'chat' && (
         <header className="absolute top-0 left-0 right-0 z-40 glass-card border-b border-border h-12 flex items-center justify-between px-4">
-          <ChainIQLogo />
-          <NotificationBell />
+          <ProqAILogo />
+          <div className="flex items-center gap-1">
+            <NotificationBell notifications={notifications} />
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+          </div>
         </header>
       )}
 
@@ -97,7 +137,12 @@ const ChatPage = () => {
               onPointClick={handleSupplierSelect}
               focusPoint={focusPoint}
             />
-            <SupplierCard supplier={selectedSupplier} onClose={() => setSelectedSupplier(null)} />
+            <SupplierCard
+              supplier={selectedSupplier}
+              onClose={() => setSelectedSupplier(null)}
+              regulatoryEnabled={settings.regulatoryConstraints}
+              onOrderPlaced={addNotification}
+            />
           </div>
           <div className="w-[40%] h-full">
             <SupplierPanel suppliers={top10} loading={panelLoading} onSelect={handleSupplierSelect} />
