@@ -126,7 +126,7 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
           arcEndLng="endLng"
           arcColor={() => ['#00ff88', '#00aaff']}
           arcAltitude={0.1}
-          arcStroke={2.5}
+          arcStroke={1.2}
           arcDashLength={0.4}
           arcDashGap={0.2}
           arcDashAnimateTime={1500}
