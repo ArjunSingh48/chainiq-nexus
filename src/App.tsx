@@ -19,7 +19,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/portal" element={<PortalSelect />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/supervisor" element={<SupervisorPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
