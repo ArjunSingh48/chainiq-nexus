@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = "";
 
 export interface WorkflowSupplier {
   id: string;
@@ -45,7 +45,7 @@ export async function workflowChat(
   message: string,
   sessionId: string | null = null
 ): Promise<WorkflowResponse> {
-  const res = await fetch(`${API_BASE}/workflow`, {
+  const res = await fetch(`${API_BASE}/api/workflow`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message, session_id: sessionId }),
