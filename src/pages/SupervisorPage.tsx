@@ -112,6 +112,7 @@ const SupervisorPage = () => {
   const [requests, setRequests] = useState(mockRequests);
   const [selectedId, setSelectedId] = useState<string>(requests[0]?.id ?? '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const tt = useCursorTooltip();
 
   const selected = requests.find((r) => r.id === selectedId);
 
