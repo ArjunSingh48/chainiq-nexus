@@ -24,7 +24,7 @@ const Index = () => {
           <div className="flex items-center gap-1">
             <NotificationBell notifications={defaultNotifications} />
             <button className="p-2 rounded-full hover:bg-muted transition-colors">
-              <Settings className="w-5 h-5 text-foreground" />
+              <Settings className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
