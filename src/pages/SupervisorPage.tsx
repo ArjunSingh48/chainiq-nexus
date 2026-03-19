@@ -164,9 +164,10 @@ const SupervisorPage = () => {
                 <BarChart
                   label="Potential Benefit"
                   value={selected.benefitValue}
-                  color="hsl(160, 84%, 39%)"
+                  color="hsl(0, 0%, 40%)"
                   tooltipText={`Projected benefit: ${selected.benefitValue}% improvement in operational efficiency and value delivery.`}
                   tt={tt}
+                  disabled
                 />
               </div>
             </>
