@@ -48,10 +48,18 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
         controls.enableZoom = true;
       }
       // Make globe semi-transparent
-      const material = globeRef.current.globeMaterial();
-      if (material) {
-        material.opacity = 0.7;
-        material.transparent = true;
+      try {
+        const scene = globeRef.current.scene();
+        if (scene) {
+          scene.traverse((obj: any) => {
+            if (obj.isMesh && obj.material && obj.material.map) {
+              obj.material.opacity = 0.7;
+              obj.material.transparent = true;
+            }
+          });
+        }
+      } catch (e) {
+        // globeMaterial not available in this version
       }
     }
   }, [dimensions]);
