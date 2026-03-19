@@ -116,7 +116,7 @@ export function generateAuditPdf(data: AuditData): void {
   }
   y += 4;
 
-  y = addSectionHeader(doc, '3. AI INTERACTION LOG', y);
+  y = addSectionHeader(doc, '2. INTERACTION LOG', y);
   if (data.chatMessages.length > 0) {
     for (const msg of data.chatMessages) {
       const prefix = msg.role === 'user' ? 'USER' : 'AI';
