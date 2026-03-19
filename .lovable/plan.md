@@ -1,35 +1,63 @@
 
 
-# Plan: Add Voice-to-Text Button in Chat + Fix Build Error
+# Plan: Audit Document Generation System
 
 ## Overview
-Add a microphone button next to the send button in the chat interface that uses the browser's Web Speech API for speech-to-text transcription. Also fix the existing build error.
-
-Note: Since the ElevenLabs API key provided is a server-side key (sk_*), and the ElevenLabs STT API requires server-side calls, we'll use the browser's built-in Web Speech API (`webkitSpeechRecognition`) for voice-to-text. This works entirely client-side, requires no API key, and provides real-time transcription. This avoids needing a backend edge function setup.
-
-If you specifically want ElevenLabs STT instead, we'd need to set up Supabase/Lovable Cloud with an edge function — let me know.
+Add an "AUDIT" button fixed above the chatbot bar that collects all session data and generates a downloadable PDF audit report using jsPDF + jspdf-autotable.
 
 ## Changes
 
-### 1. Fix build error in `src/components/SupplierPanel.tsx`
-Replace `.replaceAll('_', ' ')` with `.split('_').join(' ')` on line 40 to avoid the ES2021 target requirement.
+### 1. Install jsPDF dependency
+Add `jspdf` and `jspdf-autotable` packages.
 
-### 2. Add voice button to `src/components/ChatInterface.tsx`
-- Import `Mic` and `MicOff` icons from lucide-react
-- Add state: `isListening` (boolean)
-- Create a `toggleListening` function that:
-  - Creates a `webkitSpeechRecognition` instance
-  - On result, appends recognized text to the input field
-  - Shows a pulsing red mic icon while listening
-- Add the mic button next to the send button in all three chat views (full screen, minimized-expanded, minimized bar)
-- The mic button will pulse/animate red when actively listening
-- Clicking again stops listening
+### 2. Create `src/lib/generateAuditPdf.ts`
+A standalone function that accepts an `AuditData` object and produces a downloadable PDF.
 
-## UI Layout
-```text
-┌──────────────────────────────────────┐
-│ [text input.....................] 🎤 ➤│
-└──────────────────────────────────────┘
-```
-The mic button sits between the input and send button, with a red pulse animation when active.
+**AuditData interface** aggregates:
+- `workflow: WorkflowResponse | null` (request details, engine output, recommendation, escalations, validation)
+- `suppliers: Supplier[]` (all suppliers)
+- `top10: Supplier[]` (shortlisted)
+- `selectedSupplier: Supplier | null`
+- `notifications: Notification[]`
+- `consignments: Consignment[]`
+- `chatMessages: { role: string; text: string }[]`
+- `sessionId: string | null`
+
+**PDF sections** (generated with jsPDF):
+1. **Header** — "ProqAI Audit Report", subtitle, timestamp, session ID
+2. **Request Overview** — category, country, quantity, budget, currency from `workflow.request`
+3. **AI Interaction Log** — chat messages listed chronologically
+4. **Supplier Analysis** — total count + table of top 10 (Name, Price, ESG, Quality, Risk, Rank) using jspdf-autotable
+5. **Decision Summary** — selected supplier name, recommendation status + reason from `engine_output.recommendation`
+6. **Compliance & Validation** — validation issues, escalations (blocking/non-blocking), policy compliance flags
+7. **Order & Delivery** — consignment details (supplier, origin, destination, units, order ID)
+8. **Notifications Log** — grouped by approved/pending/rejected
+9. **Final Summary** — total suppliers, key justification
+
+Style: clean enterprise look, dark header bar, section headers with lines, consistent fonts. Auto page breaks handled by jsPDF.
+
+### 3. Create `src/components/AuditButton.tsx`
+- Glassmorphism button labeled "AUDIT" with `FileText` icon
+- Positioned fixed, right side, `bottom-[76px]` (above the 60px chatbot bar)
+- On click: builds `AuditData` from props, calls `generateAuditPdf()`, triggers download
+- Hover: scale + glow effect
+
+### 4. Update `src/pages/ChatPage.tsx`
+- Import `AuditButton`
+- Render it when `phase !== 'chat'` (only visible after results are shown)
+- Pass all required state: `workflow`, `suppliers`, `top10`, `selectedSupplier`, `notifications`, `consignments`, `sessionId`
+- Also need to expose chat messages from `ChatInterface` — add a `messagesRef` (useRef) or lift messages state up to ChatPage so the audit can access the conversation log
+
+### 5. Expose chat messages
+- Add a `onMessagesChange` callback prop to `ChatInterface` that fires whenever messages update
+- Store messages in ChatPage state: `chatMessages`
+- Pass to AuditButton
+
+## Technical Details
+
+- **jsPDF** for PDF creation — lightweight, no server needed
+- **jspdf-autotable** plugin for the supplier table
+- Download triggered via `doc.save('ProqAI_Audit_Report_<timestamp>.pdf')`
+- All data comes from existing React state — no API calls needed
+- Button only shows in results phase to ensure there's data to report
 
