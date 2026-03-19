@@ -42,7 +42,7 @@ const riskLabels: Record<string, string> = {
   geopolitical: 'Geopolitical Risk: Regional instability and trade barriers',
 };
 
-function DonutChart({ risks }: { risks: SupervisorRequest['risks'] }) {
+function DonutChart({ risks, tt }: { risks: SupervisorRequest['risks']; tt: ReturnType<typeof useCursorTooltip> }) {
   const entries = Object.entries(risks) as [keyof typeof risks, number][];
   const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
   const r = 60;
@@ -57,20 +57,19 @@ function DonutChart({ risks }: { risks: SupervisorRequest['risks'] }) {
           const currentOffset = offset;
           offset += dash;
           return (
-            <Tooltip key={key}>
-              <TooltipTrigger asChild>
-                <circle
-                  cx="80" cy="80" r={r}
-                  fill="none"
-                  stroke={riskColors[key]}
-                  strokeWidth="20"
-                  strokeDasharray={`${dash} ${circumference - dash}`}
-                  strokeDashoffset={-currentOffset}
-                  className="transition-all duration-300 cursor-pointer hover:opacity-80"
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">{riskLabels[key]}</TooltipContent>
-            </Tooltip>
+            <circle
+              key={key}
+              cx="80" cy="80" r={r}
+              fill="none"
+              stroke={riskColors[key]}
+              strokeWidth="20"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-currentOffset}
+              className="transition-all duration-300 cursor-pointer hover:opacity-80"
+              onMouseEnter={(e) => tt.show(riskLabels[key], e)}
+              onMouseMove={tt.move}
+              onMouseLeave={tt.hide}
+            />
           );
         })}
       </svg>
@@ -86,25 +85,25 @@ function DonutChart({ risks }: { risks: SupervisorRequest['risks'] }) {
   );
 }
 
-function BarChart({ label, value, color, tooltip }: { label: string; value: number; color: string; tooltip: string }) {
+function BarChart({ label, value, color, tooltipText, tt }: { label: string; value: number; color: string; tooltipText: string; tt: ReturnType<typeof useCursorTooltip> }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="space-y-1 cursor-pointer">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{label}</span>
-            <span>{value}%</span>
-          </div>
-          <div className="h-3 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${value}%`, background: color }}
-            />
-          </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs max-w-xs">{tooltip}</TooltipContent>
-    </Tooltip>
+    <div
+      className="space-y-1 cursor-pointer"
+      onMouseEnter={(e) => tt.show(tooltipText, e)}
+      onMouseMove={tt.move}
+      onMouseLeave={tt.hide}
+    >
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="h-3 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${value}%`, background: color }}
+        />
+      </div>
+    </div>
   );
 }
 
