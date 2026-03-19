@@ -145,7 +145,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '4. SUPPLIER ANALYSIS', y);
+  y = addSectionHeader(doc, '3. SUPPLIER ANALYSIS', y);
   y = addField(doc, 'Total Evaluated', data.suppliers.length.toString(), y);
   y = addField(doc, 'Shortlisted', data.top10.length.toString(), y);
   y += 2;
