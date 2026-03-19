@@ -153,6 +153,17 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
                 {s.policyCompliant === false && (
                   <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
                 )}
+                {s.confidencePct != null && (
+                  <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
+                    s.confidencePct >= 80
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : s.confidencePct >= 50
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-red-500/20 text-red-300'
+                  }`}>
+                    {s.confidencePct}%
+                  </span>
+                )}
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300">
                 <span>ESG: <span className="font-medium text-accent">{s.esgScore ?? 'n/a'}</span></span>

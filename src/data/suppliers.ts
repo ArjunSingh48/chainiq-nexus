@@ -18,6 +18,7 @@ export interface Supplier {
   standardLeadTimeDays?: number | null;
   expeditedLeadTimeDays?: number | null;
   recommendationNote?: string | null;
+  confidencePct?: number | null;
 }
 
 export interface Notification {
