@@ -96,7 +96,7 @@ export function generateAuditPdf(data: AuditData): void {
 
   let y = 42;
 
-  y = addSectionHeader(doc, '2. REQUEST OVERVIEW', y);
+  y = addSectionHeader(doc, '1. REQUEST OVERVIEW', y);
   if (req) {
     y = addField(doc, 'Category', req.category_l2 || 'N/A', y);
     y = addField(doc, 'Country', req.country || 'N/A', y);
