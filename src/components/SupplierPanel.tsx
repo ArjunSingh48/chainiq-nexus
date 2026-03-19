@@ -1,14 +1,28 @@
+import { useState } from 'react';
 import { Supplier } from '@/data/suppliers';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { PolicyTraceEntry, WorkflowResponse } from '@/lib/workflow';
 import { AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+
+type ClarificationItem = {
+  field: string;
+  rule: string;
+  escalate_to: string;
+};
+type ClarificationDecision = {
+  decision: 'approved' | 'denied';
+  field: string;
+};
 
 interface Props {
   suppliers: Supplier[];
   loading: boolean;
   onSelect: (supplier: Supplier) => void;
   workflow?: WorkflowResponse | null;
+  clarificationDecisions?: Record<string, ClarificationDecision>;
+  onClarificationDecision?: (item: ClarificationItem, decision: 'approved' | 'denied') => void;
 }
 
 const flagUrl = (code: string) => `https://flagcdn.com/24x18/${code.toLowerCase()}.png`;
@@ -32,12 +46,35 @@ const traceLabelMap: Record<PolicyTraceEntry['status'], string> = {
   warning: 'Warning',
 };
 
-const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
+const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDecisions = {}, onClarificationDecision }: Props) => {
+  const [selectedClarification, setSelectedClarification] = useState<ClarificationItem | null>(null);
   const recommendation = workflow?.engine_output?.recommendation;
   const validation = workflow?.engine_output?.validation;
   const policyTrace = workflow?.engine_output?.policy_trace ?? [];
   const request = workflow?.request;
   const clarificationItems = recommendation?.clarifications_needed ?? [];
+  const pendingClarifications = clarificationItems.filter((item) => !clarificationDecisions[item.rule]);
+  const approvedClarifications = clarificationItems.filter((item) => clarificationDecisions[item.rule]?.decision === 'approved');
+  const deniedClarifications = clarificationItems.filter((item) => clarificationDecisions[item.rule]?.decision === 'denied');
+  const nonRequesterApprovals = (workflow?.engine_output?.escalations ?? []).filter(
+    (item) => !item.blocking && item.escalate_to && item.escalate_to !== 'Requester Clarification',
+  );
+  const effectiveRecommendationStatus = deniedClarifications.length > 0
+    ? 'request_denied'
+    : pendingClarifications.length > 0
+      ? recommendation?.status
+      : recommendation?.status === 'needs_clarification'
+        ? (nonRequesterApprovals.length > 0 ? 'pending_approval' : 'ready_to_award')
+        : recommendation?.status;
+  const effectiveRecommendationReason = deniedClarifications.length > 0
+    ? 'Requester denied the clarification required to continue sourcing.'
+    : pendingClarifications.length > 0
+      ? recommendation?.reason
+      : recommendation?.status === 'needs_clarification'
+        ? approvedClarifications.length === 1
+          ? 'Requester approved the clarification. The request can continue.'
+          : 'Requester approved all required clarifications. The request can continue.'
+        : recommendation?.reason ?? recommendation?.rationale;
 
   const passedCount = policyTrace.filter((entry) => entry.status === 'passed').length;
   const failedCount = policyTrace.filter((entry) => entry.status === 'failed').length;
@@ -65,32 +102,42 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
             {recommendation && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
                 <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Recommendation</p>
-                <p className="mt-1 font-semibold capitalize text-slate-50">{recommendation.status.split('_').join(' ')}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason ?? recommendation.rationale}</p>
-                {clarificationItems.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
-                    {clarificationItems.length === 1 ? (
-                      <p className="text-xs leading-5 text-sky-100">
-                        <span className="mr-2 uppercase tracking-widest text-sky-200">Needed From Requester</span>
-                        <span className="ml-2 uppercase tracking-widest text-sky-200/80 float-right">Rule {clarificationItems[0].rule}</span><br></br>
-                        <span className="font-medium text-slate-100">{clarificationItems[0].field}</span>
-                      </p>
-                    ) : (
-                      <>
-                        <p className="text-xs uppercase tracking-widest text-sky-200">Needed From Requester</p>
-                        <div className="mt-2 space-y-2">
-                          {clarificationItems.map((item) => (
-                            <div key={`${item.rule}-${item.field}`} className="rounded-md border border-white/10 bg-white/5 px-2 py-2">
-                              <p className="text-xs font-medium text-slate-100">{item.field}</p>
+                  <p className="mt-1 font-semibold capitalize text-slate-50">{effectiveRecommendationStatus?.split('_').join(' ')}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">{effectiveRecommendationReason}</p>
+                  {clarificationItems.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
+                      <p className="text-xs uppercase tracking-widest text-sky-200">Needed From Requester</p>
+                      <div className="mt-2 space-y-2">
+                        {clarificationItems.map((item) => {
+                          const decision = clarificationDecisions[item.rule];
+                          const isPending = !decision;
+                          const tone = isPending
+                            ? 'border-white/10 bg-white/5'
+                            : decision.decision === 'approved'
+                              ? 'border-emerald-400/30 bg-emerald-500/10'
+                              : 'border-red-400/30 bg-red-500/10';
+
+                          return (
+                            <button
+                              key={`${item.rule}-${item.field}`}
+                              type="button"
+                              onClick={() => isPending && setSelectedClarification(item)}
+                              className={`w-full rounded-md border px-2 py-2 text-left transition-colors ${tone} ${isPending ? 'hover:bg-white/10' : 'cursor-default'}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-xs font-medium text-slate-100">{item.field}</p>
+                                <span className="shrink-0 text-[10px] uppercase tracking-widest text-sky-200/80">
+                                  {decision ? decision.decision : 'Review'}
+                                </span>
+                              </div>
                               <p className="mt-1 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {item.rule}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
             )}
             {validation && validation.issues_detected.length > 0 && (
               <div className="rounded-lg border border-amber-400/40 bg-amber-500/15 p-3">
@@ -177,6 +224,45 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
         )}
         </div>
       </div>
+      <Dialog open={selectedClarification !== null} onOpenChange={(open) => !open && setSelectedClarification(null)}>
+        <DialogContent className="glass-card border-border py-8">
+          {selectedClarification && (
+            <>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">Requester Decision</p>
+              <p className="mb-3 text-lg font-semibold text-foreground">Resolve clarification</p>
+              <div className="rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
+                <p className="text-sm text-slate-100">{selectedClarification.field}</p>
+                <p className="mt-2 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {selectedClarification.rule}</p>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Approving accepts the exception and lets the request continue. Denying keeps the request blocked.
+              </p>
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClarificationDecision?.(selectedClarification, 'denied');
+                    setSelectedClarification(null);
+                  }}
+                  className="flex-1 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/80"
+                >
+                  Deny
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClarificationDecision?.(selectedClarification, 'approved');
+                    setSelectedClarification(null);
+                  }}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+                >
+                  Approve
+                </button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

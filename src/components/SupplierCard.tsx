@@ -9,16 +9,28 @@ interface Props {
   onClose: () => void;
   regulatoryEnabled?: boolean;
   requiresApproval?: boolean;
+  requesterClarificationPending?: boolean;
+  requesterClarificationDenied?: boolean;
   onOrderPlaced?: (supplier: Supplier, status: 'success' | 'pending') => void;
   onOrderSuccess?: (supplier: Supplier) => void;
 }
 
-const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresApproval = false, onOrderPlaced, onOrderSuccess }: Props) => {
+const SupplierCard = ({
+  supplier,
+  onClose,
+  regulatoryEnabled = false,
+  requiresApproval = false,
+  requesterClarificationPending = false,
+  requesterClarificationDenied = false,
+  onOrderPlaced,
+  onOrderSuccess,
+}: Props) => {
   const [showReason, setShowReason] = useState(false);
   const [orderResult, setOrderResult] = useState<'success' | 'pending' | null>(null);
   const [ordering, setOrdering] = useState(false);
   const [showRegulatoryWarning, setShowRegulatoryWarning] = useState(false);
   const [showApprovalWarning, setShowApprovalWarning] = useState(false);
+  const [showRequesterClarificationWarning, setShowRequesterClarificationWarning] = useState(false);
 
   if (!supplier) return null;
 
@@ -34,6 +46,14 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresAp
   const handleOrder = async () => {
     if (regulatoryEnabled && isRestrictedRegion) {
       setShowRegulatoryWarning(true);
+      return;
+    }
+    if (requesterClarificationDenied) {
+      setShowRequesterClarificationWarning(true);
+      return;
+    }
+    if (requesterClarificationPending) {
+      setShowRequesterClarificationWarning(true);
       return;
     }
     if (requiresApproval) {
@@ -133,8 +153,8 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresAp
           <button onClick={() => setShowReason(true)} className="flex-1 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/70">
             Recommendation
           </button>
-          <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
-            {ordering ? 'Placing...' : requiresApproval ? 'Request Approval' : 'Place Order'}
+          <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
+            {ordering ? 'Placing...' : requesterClarificationDenied ? 'Request Denied' : requesterClarificationPending ? 'Awaiting Input' : requiresApproval ? 'Request Approval' : 'Place Order'}
           </button>
         </div>
       </div>
@@ -177,6 +197,22 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresAp
           </p>
           <button onClick={handleApprovalConfirm} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80">
             Submit for Review
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRequesterClarificationWarning} onOpenChange={setShowRequesterClarificationWarning}>
+        <DialogContent className="glass-card border-border py-8 text-center">
+          <p className="mb-3 text-lg font-semibold text-foreground">
+            {requesterClarificationDenied ? 'Requester Declined' : 'Requester Decision Required'}
+          </p>
+          <p className="mb-4 text-sm text-muted-foreground">
+            {requesterClarificationDenied
+              ? 'This request cannot proceed because the requester denied the clarification. Start a new request or adjust the inputs.'
+              : 'Resolve the "Needed From Requester" item in the side panel before placing the order.'}
+          </p>
+          <button onClick={() => setShowRequesterClarificationWarning(false)} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80">
+            Understood
           </button>
         </DialogContent>
       </Dialog>

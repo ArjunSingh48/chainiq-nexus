@@ -13,6 +13,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { ChatSubmitResult } from '@/components/ChatInterface';
 
 type Phase = 'chat' | 'results';
+type RequesterClarificationItem = { field: string; rule: string; escalate_to: string };
+type RequesterClarificationDecision = { decision: 'approved' | 'denied'; field: string };
 
 const ZURICH = { lat: 47.3769, lng: 8.5417 };
 
@@ -127,12 +129,14 @@ const ChatPage = () => {
   const [chatMessages, setChatMessages] = useState<{ role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]>([]);
   const [pendingNotifications, setPendingNotifications] = useState<Notification[] | null>(null);
   const [approvalPopupApprovals, setApprovalPopupApprovals] = useState<Array<{ approver: string; reason: string; rule: string }>>([]);
+  const [clarificationDecisions, setClarificationDecisions] = useState<Record<string, RequesterClarificationDecision>>({});
 
   const handleSubmit = useCallback(async (message: string): Promise<ChatSubmitResult> => {
     setShowAnalysis(true);
     try {
       const result = await runWorkflow(message, sessionId);
       setSessionId(result.session_id);
+      setClarificationDecisions({});
       const interpretedAs = buildInterpretedSummary(result);
 
       if (result.status === 'needs_clarification') {
@@ -229,6 +233,35 @@ const ChatPage = () => {
     setApprovalPopupApprovals([]);
   }, [pendingNotifications]);
 
+  const handleClarificationDecision = useCallback((item: RequesterClarificationItem, decision: 'approved' | 'denied') => {
+    setClarificationDecisions((prev) => ({
+      ...prev,
+      [item.rule]: {
+        decision,
+        field: item.field,
+      },
+    }));
+    setNextNotifId((prev) => {
+      const notifId = prev;
+      setNotifications((current) => [
+        {
+          id: notifId,
+          type: decision === 'approved' ? 'approved' : 'rejected',
+          message: `${decision === 'approved' ? 'Requester approved' : 'Requester denied'}: ${item.field}`,
+          time: 'Just now',
+        },
+        ...current,
+      ]);
+      return prev + 1;
+    });
+  }, []);
+
+  const clarificationItems = workflow?.engine_output?.recommendation?.clarifications_needed ?? [];
+  const unresolvedClarifications = clarificationItems.filter((item) => !clarificationDecisions[item.rule]);
+  const deniedClarifications = clarificationItems.filter((item) => clarificationDecisions[item.rule]?.decision === 'denied');
+  const requesterClarificationPending = unresolvedClarifications.length > 0;
+  const requesterClarificationDenied = deniedClarifications.length > 0;
+
   return (
     <div
       className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]"
@@ -265,6 +298,8 @@ const ChatPage = () => {
               onClose={() => setSelectedSupplier(null)}
               onOrderPlaced={addNotification}
               onOrderSuccess={handleOrderSuccess}
+              requesterClarificationPending={requesterClarificationPending}
+              requesterClarificationDenied={requesterClarificationDenied}
               requiresApproval={(workflow?.engine_output?.escalations ?? []).some(e => !e.blocking && e.escalate_to && e.escalate_to !== 'Requester Clarification')}
             />
             <TrackingCard
@@ -273,7 +308,14 @@ const ChatPage = () => {
             />
           </div>
           <div className="h-full min-h-0 w-[45%]">
-            <SupplierPanel suppliers={top10} loading={showAnalysis} onSelect={handleSupplierSelect} workflow={workflow} />
+            <SupplierPanel
+              suppliers={top10}
+              loading={showAnalysis}
+              onSelect={handleSupplierSelect}
+              workflow={workflow}
+              clarificationDecisions={clarificationDecisions}
+              onClarificationDecision={handleClarificationDecision}
+            />
           </div>
         </div>
       )}
