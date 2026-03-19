@@ -14,7 +14,7 @@ interface Props {
   onMessagesChange?: (messages: { role: string; text: string }[]) => void;
 }
 
-const ChatInterface = ({ minimized, onSubmit, phase, loading }: Props) => {
+const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }: Props) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'ai', text: 'Describe what you need to buy. I will analyze it, run the supplier engine, and return the shortlist.' },
   ]);
