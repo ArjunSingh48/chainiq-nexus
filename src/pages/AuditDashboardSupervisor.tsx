@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, ChevronDown, ChevronUp, TrendingUp, CheckCircle2, 
 import ProqAILogo from '@/components/ProqAILogo';
 import { BarChart, CursorTooltip, useCursorTooltip, riskColors } from '@/components/RiskDonutChart';
 import { weeklyRequests, weeklyMetrics, averageRisks } from '@/data/auditMockData';
-import { generateAuditPdf } from '@/lib/generateAuditPdf';
+import { generateWeeklyPdf } from '@/lib/generateWeeklyPdf';
 
 const statusDot: Record<string, string> = {
   approved: 'bg-accent',
