@@ -1,9 +1,32 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProqAILogo from '@/components/ProqAILogo';
 import { ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import { mockRequests, type SupervisorRequest } from '@/data/supervisorMockData';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
+function useCursorTooltip() {
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const show = useCallback((text: string, e: React.MouseEvent) => {
+    setTip({ text, x: e.clientX, y: e.clientY });
+  }, []);
+  const move = useCallback((e: React.MouseEvent) => {
+    setTip((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+  }, []);
+  const hide = useCallback(() => setTip(null), []);
+  return { tip, show, move, hide };
+}
+
+function CursorTooltip({ tip }: { tip: { text: string; x: number; y: number } | null }) {
+  if (!tip) return null;
+  return (
+    <div
+      className="pointer-events-none fixed z-[200] max-w-xs rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0"
+      style={{ left: tip.x + 12, top: tip.y - 8 }}
+    >
+      {tip.text}
+    </div>
+  );
+}
 
 const riskColors = {
   financial: 'hsl(358, 87%, 52%)',
@@ -19,7 +42,7 @@ const riskLabels: Record<string, string> = {
   geopolitical: 'Geopolitical Risk: Regional instability and trade barriers',
 };
 
-function DonutChart({ risks }: { risks: SupervisorRequest['risks'] }) {
+function DonutChart({ risks, tt }: { risks: SupervisorRequest['risks']; tt: ReturnType<typeof useCursorTooltip> }) {
   const entries = Object.entries(risks) as [keyof typeof risks, number][];
   const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
   const r = 60;
@@ -34,20 +57,19 @@ function DonutChart({ risks }: { risks: SupervisorRequest['risks'] }) {
           const currentOffset = offset;
           offset += dash;
           return (
-            <Tooltip key={key}>
-              <TooltipTrigger asChild>
-                <circle
-                  cx="80" cy="80" r={r}
-                  fill="none"
-                  stroke={riskColors[key]}
-                  strokeWidth="20"
-                  strokeDasharray={`${dash} ${circumference - dash}`}
-                  strokeDashoffset={-currentOffset}
-                  className="transition-all duration-300 cursor-pointer hover:opacity-80"
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">{riskLabels[key]}</TooltipContent>
-            </Tooltip>
+            <circle
+              key={key}
+              cx="80" cy="80" r={r}
+              fill="none"
+              stroke={riskColors[key]}
+              strokeWidth="20"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-currentOffset}
+              className="transition-all duration-300 cursor-pointer hover:opacity-80"
+              onMouseEnter={(e) => tt.show(riskLabels[key], e)}
+              onMouseMove={tt.move}
+              onMouseLeave={tt.hide}
+            />
           );
         })}
       </svg>
@@ -63,25 +85,25 @@ function DonutChart({ risks }: { risks: SupervisorRequest['risks'] }) {
   );
 }
 
-function BarChart({ label, value, color, tooltip }: { label: string; value: number; color: string; tooltip: string }) {
+function BarChart({ label, value, color, tooltipText, tt }: { label: string; value: number; color: string; tooltipText: string; tt: ReturnType<typeof useCursorTooltip> }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="space-y-1 cursor-pointer">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{label}</span>
-            <span>{value}%</span>
-          </div>
-          <div className="h-3 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${value}%`, background: color }}
-            />
-          </div>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs max-w-xs">{tooltip}</TooltipContent>
-    </Tooltip>
+    <div
+      className="space-y-1 cursor-pointer"
+      onMouseEnter={(e) => tt.show(tooltipText, e)}
+      onMouseMove={tt.move}
+      onMouseLeave={tt.hide}
+    >
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="h-3 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${value}%`, background: color }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -90,6 +112,7 @@ const SupervisorPage = () => {
   const [requests, setRequests] = useState(mockRequests);
   const [selectedId, setSelectedId] = useState<string>(requests[0]?.id ?? '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const tt = useCursorTooltip();
 
   const selected = requests.find((r) => r.id === selectedId);
 
@@ -126,7 +149,7 @@ const SupervisorPage = () => {
 
               <div className="glass-card rounded-lg p-5 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Risk Analysis</h3>
-                <DonutChart risks={selected.risks} />
+                <DonutChart risks={selected.risks} tt={tt} />
               </div>
 
               <div className="glass-card rounded-lg p-5 space-y-4">
@@ -135,13 +158,15 @@ const SupervisorPage = () => {
                   label="Cost Impact"
                   value={selected.costValue}
                   color="hsl(358, 87%, 52%)"
-                  tooltip={`Estimated cost impact: ${selected.costValue}% of allocated budget will be consumed by this procurement.`}
+                  tooltipText={`Estimated cost impact: ${selected.costValue}% of allocated budget will be consumed by this procurement.`}
+                  tt={tt}
                 />
                 <BarChart
                   label="Potential Benefit"
                   value={selected.benefitValue}
                   color="hsl(160, 84%, 39%)"
-                  tooltip={`Projected benefit: ${selected.benefitValue}% improvement in operational efficiency and value delivery.`}
+                  tooltipText={`Projected benefit: ${selected.benefitValue}% improvement in operational efficiency and value delivery.`}
+                  tt={tt}
                 />
               </div>
             </>
@@ -215,6 +240,7 @@ const SupervisorPage = () => {
           })}
         </section>
       </main>
+      <CursorTooltip tip={tt.tip} />
     </div>
   );
 };
