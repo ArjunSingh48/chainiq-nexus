@@ -30,9 +30,8 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
               <p className="text-xs uppercase tracking-widest text-slate-400">Request</p>
               <p className="mt-1 font-semibold text-slate-50">{request.category_l2}</p>
               <p className="text-slate-300">
-                Qty {request.quantity ?? 'n/a'} · {formatMoney(request.budget_amount, request.currency)} · {request.delivery_countries.join(', ')}
+                Qty {request.quantity ?? 'n/a'} · {formatMoney(request.budget_amount, request.currency)} · {request.delivery_countries.map(cc => <span>{cc}<img src={flagUrl(cc)} className="h-4 w-5 rounded-sm object-cover inline" /></span>)}
               </p>
-              <p className="mt-2 text-xs leading-5 text-slate-400">{request.request_text}</p>
             </div>
             {recommendation && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">

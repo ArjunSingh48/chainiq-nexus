@@ -123,7 +123,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading }: Props) => {
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`chat-mono max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role === 'ai' ? 'border border-slate-700 bg-slate-900 text-slate-50' : 'bg-primary text-primary-foreground'}`}>
+              <div className={`chat-mono whitespace-pre-wrap max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role === 'ai' ? 'border border-slate-700 bg-slate-900 text-slate-50' : 'bg-primary text-primary-foreground'}`}>
                 {m.role === 'ai' && <span className="mb-1 block text-xs font-bold text-emerald-400">ProqAI</span>}
                 {m.text}
               </div>
@@ -156,7 +156,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading }: Props) => {
         <div className="w-full space-y-4 mb-8">
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-              <div className={`chat-mono max-w-[85%] rounded-xl px-4 py-3 text-sm ${m.role === 'ai' ? 'border border-slate-700 bg-slate-900/95 text-slate-50 shadow-lg shadow-black/20' : 'bg-primary text-primary-foreground'}`}>
+              <div className={`chat-mono whitespace-pre-wrap max-w-[85%] rounded-xl px-4 py-3 text-sm ${m.role === 'ai' ? 'border border-slate-700 bg-slate-900/95 text-slate-50 shadow-lg shadow-black/20' : 'bg-primary text-primary-foreground'}`}>
                 {m.role === 'ai' && <span className="mb-1 block text-xs font-bold text-emerald-400">ProqAI</span>}
                 {m.text}
               </div>
