@@ -51,8 +51,8 @@ const ChatPage = () => {
   useEffect(() => {
     setSuppliers(prev => prev.map(s => {
       const shouldRestrict =
-        (settings.conflicts && ['BR', 'ZA', 'IN'].includes(s.countryCode)) ||
-        (settings.blockages && ['AE', 'MX'].includes(s.countryCode)) ||
+        (settings.conflicts && ['BR', 'ZA', 'IN', 'AE'].includes(s.countryCode)) ||
+        (settings.blockages && ['MX'].includes(s.countryCode)) ||
         (settings.restrictions && s.rank > 20);
       
       if (shouldRestrict && s.accessibility === 'open') {
