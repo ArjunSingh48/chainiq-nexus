@@ -54,9 +54,9 @@ const AuditDashboardUser = () => {
           </ul>
         </section>
 
-        {/* AI Interpretation */}
+        {/* System Interpretation */}
         <section className="glass-card rounded-2xl p-7 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">AI Interpretation</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">System Interpretation</h2>
           <ul className="space-y-2.5 text-sm text-muted-foreground">
             <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Intent detected: <span className="text-foreground font-medium">{d.interpretation.intent}</span></li>
             <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Constraints applied: <span className="text-foreground font-medium">{d.interpretation.constraints}</span></li>

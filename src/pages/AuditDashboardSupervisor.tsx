@@ -81,7 +81,7 @@ const AuditDashboardSupervisor = () => {
                     <span className={`w-2.5 h-2.5 rounded-full ${statusDot[req.status]}`} />
                     <div>
                       <p className="text-sm font-medium text-foreground">{req.employee} requested {req.quantity} {req.item}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">AI suggested {req.supplier}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">System suggested {req.supplier}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
