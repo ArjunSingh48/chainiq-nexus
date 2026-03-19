@@ -11,6 +11,7 @@ interface Props {
   onSubmit: (msg: string) => Promise<string>;
   phase: 'chat' | 'results';
   loading: boolean;
+  onMessagesChange?: (messages: { role: string; text: string }[]) => void;
 }
 
 const ChatInterface = ({ minimized, onSubmit, phase, loading }: Props) => {
