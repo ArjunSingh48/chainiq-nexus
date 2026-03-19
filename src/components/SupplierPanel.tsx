@@ -38,9 +38,11 @@ const SupplierPanel = ({ suppliers, loading, onSelect }: Props) => {
                 <img src={flagUrl(s.countryCode)} alt={s.country} className="w-5 h-4 object-cover rounded-sm" />
                 <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{s.name}</span>
               </div>
-              <div className="flex gap-4 text-xs text-muted-foreground">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span>ESG: <span className="text-accent font-medium">{s.esgScore}</span></span>
-                <span>Confidence: <span className="text-secondary font-medium">{s.confidenceScore}</span></span>
+                <span>Quality: <span className="text-secondary font-medium">{s.qualityScore}</span></span>
+                <span>Risk: <span className="text-destructive font-medium">{s.riskScore}</span></span>
+                <span>Price: <span className="text-foreground font-medium">${s.unitPrice}</span></span>
               </div>
             </button>
           ))

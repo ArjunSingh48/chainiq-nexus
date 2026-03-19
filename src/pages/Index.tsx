@@ -49,6 +49,14 @@ const Index = () => {
         </div>
 
         <div className="absolute inset-0 -z-10 overflow-hidden">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+            src="/videos/hero-bg.mov"
+          />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_hsl(358,87%,52%,0.05)_0%,_transparent_70%)]" />
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
