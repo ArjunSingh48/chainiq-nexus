@@ -1,111 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProqAILogo from '@/components/ProqAILogo';
 import { ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
-import { mockRequests, type SupervisorRequest } from '@/data/supervisorMockData';
+import { mockRequests } from '@/data/supervisorMockData';
+import { DonutChart, BarChart, CursorTooltip, useCursorTooltip } from '@/components/RiskDonutChart';
+import AuditButton from '@/components/AuditButton';
 
-function useCursorTooltip() {
-  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
-  const show = useCallback((text: string, e: React.MouseEvent) => {
-    setTip({ text, x: e.clientX, y: e.clientY });
-  }, []);
-  const move = useCallback((e: React.MouseEvent) => {
-    setTip((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
-  }, []);
-  const hide = useCallback(() => setTip(null), []);
-  return { tip, show, move, hide };
-}
-
-function CursorTooltip({ tip }: { tip: { text: string; x: number; y: number } | null }) {
-  if (!tip) return null;
-  return (
-    <div
-      className="pointer-events-none fixed z-[200] max-w-xs rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0"
-      style={{ left: tip.x + 12, top: tip.y - 8 }}
-    >
-      {tip.text}
-    </div>
-  );
-}
-
-const riskColors = {
-  financial: 'hsl(358, 87%, 52%)',
-  operational: 'hsl(217, 91%, 60%)',
-  esg: 'hsl(160, 84%, 39%)',
-  geopolitical: 'hsl(45, 93%, 58%)',
+const statusDot: Record<string, string> = {
+  approved: 'bg-accent',
+  pending: 'bg-yellow-500',
+  rejected: 'bg-destructive',
 };
 
-const riskLabels: Record<string, string> = {
-  financial: 'Financial Risk: Cost volatility and budget deviation',
-  operational: 'Operational Risk: Supply chain disruptions and delays',
-  esg: 'ESG Risk: Environmental and social compliance gaps',
-  geopolitical: 'Geopolitical Risk: Regional instability and trade barriers',
+const statusLabel: Record<string, string> = {
+  approved: 'text-accent',
+  rejected: 'text-destructive',
 };
-
-function DonutChart({ risks, tt }: { risks: SupervisorRequest['risks']; tt: ReturnType<typeof useCursorTooltip> }) {
-  const entries = Object.entries(risks) as [keyof typeof risks, number][];
-  const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
-  const r = 60;
-  const circumference = 2 * Math.PI * r;
-  let offset = 0;
-
-  return (
-    <div className="flex items-center gap-6">
-      <svg width="160" height="160" viewBox="0 0 160 160">
-        {entries.map(([key, value]) => {
-          const dash = (value / total) * circumference;
-          const currentOffset = offset;
-          offset += dash;
-          return (
-            <circle
-              key={key}
-              cx="80" cy="80" r={r}
-              fill="none"
-              stroke={riskColors[key]}
-              strokeWidth="20"
-              strokeDasharray={`${dash} ${circumference - dash}`}
-              strokeDashoffset={-currentOffset}
-              className="transition-all duration-300 cursor-pointer hover:opacity-80"
-              onMouseEnter={(e) => tt.show(riskLabels[key], e)}
-              onMouseMove={tt.move}
-              onMouseLeave={tt.hide}
-            />
-          );
-        })}
-      </svg>
-      <div className="flex flex-col gap-2">
-        {entries.map(([key, value]) => (
-          <div key={key} className="flex items-center gap-2 text-xs">
-            <span className="w-3 h-3 rounded-full" style={{ background: riskColors[key] }} />
-            <span className="text-muted-foreground capitalize">{key}: {value}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function BarChart({ label, value, color, tooltipText, tt, disabled }: { label: string; value: number; color: string; tooltipText: string; tt: ReturnType<typeof useCursorTooltip>; disabled?: boolean }) {
-  return (
-    <div
-      className={`space-y-1 cursor-pointer ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
-      onMouseEnter={(e) => tt.show(tooltipText, e)}
-      onMouseMove={tt.move}
-      onMouseLeave={tt.hide}
-    >
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{label}</span>
-        <span>{value}%</span>
-      </div>
-      <div className="h-3 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${value}%`, background: color }}
-        />
-      </div>
-    </div>
-  );
-}
 
 const SupervisorPage = () => {
   const navigate = useNavigate();
@@ -127,19 +37,19 @@ const SupervisorPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
-          <button onClick={() => navigate('/portal')} className="text-muted-foreground hover:text-foreground transition-colors">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-black/60 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center gap-4">
+          <button onClick={() => navigate('/portal')} className="text-muted-foreground hover:text-foreground transition-colors duration-200">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <ProqAILogo />
-          <span className="text-xs uppercase tracking-wider text-muted-foreground ml-2">Supervisor Dashboard</span>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Supervisor Dashboard</span>
         </div>
       </header>
 
-      <main className="flex-1 flex pt-16 h-[calc(100vh-4rem)]">
+      <main className="flex-1 flex pt-16 h-[calc(100vh-4rem)] min-h-0">
         {/* LEFT — Analysis */}
-        <aside className="w-[40%] border-r border-border p-6 overflow-y-auto space-y-8">
+        <aside className="w-[40%] border-r border-border/50 p-8 overflow-y-auto space-y-8">
           {selected ? (
             <>
               <div>
@@ -147,27 +57,26 @@ const SupervisorPage = () => {
                 <p className="text-xs text-muted-foreground">{selected.title}</p>
               </div>
 
-              <div className="glass-card rounded-lg p-5 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Risk Analysis</h3>
+              <div className="glass-card rounded-xl p-6 space-y-4 flex flex-col items-center">
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider self-start">Risk Analysis</h3>
                 <DonutChart risks={selected.risks} tt={tt} />
               </div>
 
-              <div className="glass-card rounded-lg p-5 space-y-4">
+              <div className="glass-card rounded-xl p-6 space-y-4">
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Cost vs Benefit</h3>
                 <BarChart
                   label="Cost Impact"
                   value={selected.costValue}
-                  color="hsl(358, 87%, 52%)"
+                  color="hsl(var(--primary))"
                   tooltipText={`Estimated cost impact: ${selected.costValue}% of allocated budget will be consumed by this procurement.`}
                   tt={tt}
                 />
                 <BarChart
                   label="Potential Benefit"
                   value={selected.benefitValue}
-                  color="hsl(0, 0%, 40%)"
+                  color="hsl(var(--accent))"
                   tooltipText={`Projected benefit: ${selected.benefitValue}% improvement in operational efficiency and value delivery.`}
                   tt={tt}
-                  disabled
                 />
               </div>
             </>
@@ -185,19 +94,22 @@ const SupervisorPage = () => {
             return (
               <div
                 key={req.id}
-                className={`glass-card rounded-lg transition-all cursor-pointer ${isSelected ? 'border-primary/50' : ''}`}
+                className={`glass-card rounded-xl transition-all duration-200 cursor-pointer hover:shadow-[0_0_30px_rgba(0,0,0,0.3)] ${isSelected ? 'border-primary/40 shadow-[0_0_20px_rgba(236,30,36,0.08)]' : ''}`}
               >
                 <button
                   className="w-full flex items-center justify-between p-4 text-left"
                   onClick={() => toggleExpand(req.id)}
                 >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{req.title}</p>
-                    <p className="text-xs text-muted-foreground">{req.subtitle}</p>
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusDot[req.status] ?? 'bg-muted-foreground'}`} />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{req.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{req.subtitle}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {req.status !== 'pending' && (
-                      <span className={`text-xs font-semibold uppercase ${req.status === 'approved' ? 'text-accent' : 'text-destructive'}`}>
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${statusLabel[req.status] ?? ''}`}>
                         {req.status}
                       </span>
                     )}
@@ -206,11 +118,11 @@ const SupervisorPage = () => {
                 </button>
 
                 {isExpanded && (
-                  <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+                  <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3">
                     <p className="text-xs text-muted-foreground">
                       The AI suggested <span className="text-foreground font-medium">{req.supplier}</span> considering:
                     </p>
-                    <ul className="space-y-1">
+                    <ul className="space-y-1.5">
                       {req.explanationPoints.map((point, i) => (
                         <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
                           <span className="text-primary mt-0.5">•</span>
@@ -219,18 +131,18 @@ const SupervisorPage = () => {
                       ))}
                     </ul>
                     {req.status === 'pending' && (
-                      <div className="flex gap-3 pt-2">
+                      <div className="flex gap-3 pt-3">
                         <button
                           onClick={() => handleStatus(req.id, 'approved')}
-                          className="px-4 py-1.5 rounded-md text-xs font-semibold bg-accent text-accent-foreground hover:bg-accent/80 transition-colors"
+                          className="px-5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground hover:bg-accent/80 transition-colors duration-200"
                         >
-                          Approve Decision
+                          Approve
                         </button>
                         <button
                           onClick={() => handleStatus(req.id, 'rejected')}
-                          className="px-4 py-1.5 rounded-md text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/80 transition-colors"
+                          className="px-5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider bg-destructive text-destructive-foreground hover:bg-destructive/80 transition-colors duration-200"
                         >
-                          Reject Decision
+                          Reject
                         </button>
                       </div>
                     )}
@@ -241,6 +153,14 @@ const SupervisorPage = () => {
           })}
         </section>
       </main>
+
+      <AuditButton
+        role="supervisor"
+        auditData={{
+          workflow: null, suppliers: [], top10: [], selectedSupplier: null,
+          notifications: [], consignments: [], chatMessages: [], sessionId: null,
+        }}
+      />
       <CursorTooltip tip={tt.tip} />
     </div>
   );

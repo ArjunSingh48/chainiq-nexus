@@ -1,50 +1,44 @@
 
 
-# Plan: Dual Portal System
+# Plan: Fix PDF numbering, enrich supervisor PDF, add pending tags
 
-## Overview
-Add a portal selection page and a supervisor dashboard. Three new files, two small edits to existing files.
+## Three Issues
 
-## Changes
+### 1. Fix section numbering starting at "2" in PDF
+**`src/lib/generateAuditPdf.ts`** — The sections start at "2. REQUEST OVERVIEW" (line 99). Renumber all sections from 1:
+- `2. REQUEST OVERVIEW` → `1. REQUEST OVERVIEW`
+- `3. AI INTERACTION LOG` → `2. INTERACTION LOG`
+- `4. SUPPLIER ANALYSIS` → `3. SUPPLIER ANALYSIS`
+- `5. INTERPRETATION & DECISION` → `4. INTERPRETATION & DECISION`
+- `6. POLICY & VALIDATION TRACE` → `5. POLICY & VALIDATION TRACE`
+- `7. ORDER & DELIVERY` → `6. ORDER & DELIVERY`
+- `8. NOTIFICATIONS LOG` → `7. NOTIFICATIONS LOG`
+- `9. FINAL SUMMARY` → `8. FINAL SUMMARY`
 
-### 1. Create `src/pages/PortalSelect.tsx`
-Two glassmorphism cards centered on screen (reuse `glass-card` class). Card 1: "Procurement Officer" navigates to `/chat`. Card 2: "Supervisor" navigates to `/supervisor`. Use existing ProqAI logo header, same dark radial gradient background as other pages.
+### 2. Create a dedicated supervisor weekly PDF generator
+**Create `src/lib/generateWeeklyPdf.ts`** — New function `generateWeeklyPdf` that takes the current `requests` state (with live approve/reject status) and produces a data-rich technical report with:
 
-### 2. Create `src/pages/SupervisorPage.tsx`
-Split layout: left 40% analysis panel, right 60% request inbox.
+1. **Header** — "ProqAI Weekly Procurement Report" with timestamp
+2. **1. Executive Summary** — Total requests, approved/pending/rejected counts, total spend estimate, average benefit score
+3. **2. Request Detail Table** — `autoTable` with columns: #, Employee, Item, Qty, Supplier, Status, Cost%, Benefit%, showing all requests
+4. **3. Risk Analysis** — Average risk values (financial, operational, ESG, geopolitical) as fields, plus per-request risk breakdown table (#, Employee, Financial, Operational, ESG, Geopolitical)
+5. **4. Cost vs Benefit Analysis** — Average cost/benefit, table per request showing cost%, benefit%, delta (benefit-cost)
+6. **5. Decision Breakdown** — For each request: employee, item, supplier, status, and all explanation points
+7. **6. Notifications Summary** — Counts and lists per status category
+8. **7. Weekly Assessment** — Static insight text
 
-**State**: `requests[]` array of mock data, `selectedRequest` index.
+All sections use the same dark theme styling (ensureDarkBg, green headers, white text).
 
-**Mock data** (5-6 requests), each containing:
-- `title`, `subtitle`, `supplier`, `explanationPoints` (array of strings like "Mentioned", "Quality", "Risk", "Preferred")
-- `risks`: `{ financial: number, operational: number, esg: number, geopolitical: number }` (0-100)
-- `costValue`, `benefitValue` (0-100)
-- `status`: 'pending' | 'approved' | 'rejected'
+**`src/pages/AuditDashboardSupervisor.tsx`** — Update `handleDownload` to call `generateWeeklyPdf(requests)` instead of `generateAuditPdf` with empty data. Pass current `requests` state so the PDF reflects any approve/reject actions taken on the dashboard.
 
-**Right side** (request inbox):
-- List of cards using `glass-card` styling. Each shows title + subtitle + expand chevron.
-- Clicking a card selects it (border highlight) and loads its data into the left panel.
-- Expanded view shows explanation points as bullet list + Approve (green) / Reject (red) buttons.
+### 3. Add "PENDING" tag on supervisor dashboard request cards
+**`src/pages/AuditDashboardSupervisor.tsx`** — In the request list (line 87-92), update the status display logic: currently it only shows status text for non-pending items. Change it to show status for ALL items including pending, with pending shown as a yellow `"PENDING"` tag on the right side (matching the existing approved/rejected style but with `text-yellow-500`).
 
-**Left side** (analysis dashboard):
-- **Risk Donut Chart**: Pure SVG donut (4 colored arc segments using `stroke-dasharray`/`stroke-dashoffset` on `<circle>` elements). Tooltip on hover with 1-line risk explanation.
-- **Cost vs Benefit Bars**: Two horizontal bars using simple divs with rounded edges and percentage widths. Tooltip on hover.
+## Files
 
-No new libraries needed -- SVG for donut, divs for bars, existing Tooltip component for hover.
-
-### 3. Create `src/data/supervisorMockData.ts`
-Export the mock requests array to keep the page file clean.
-
-### 4. Update `src/App.tsx`
-Add routes: `/portal` for `PortalSelect`, `/supervisor` for `SupervisorPage`.
-
-### 5. Update `src/pages/Index.tsx`
-Change the CTA button to navigate to `/portal` instead of `/chat`.
-
-## Technical Notes
-- Zero new dependencies
-- SVG donut chart: 4 `<circle>` elements with `stroke-dasharray` calculated from risk values
-- Bars: simple `<div>` with `width: X%` and Tailwind classes
-- Approve/Reject buttons update local state only (mock)
-- Reuses: `glass-card`, `cta-impact`, `ProqAILogo`, `NotificationBell`, existing color palette
+| File | Action |
+|------|--------|
+| `src/lib/generateAuditPdf.ts` | Edit (fix numbering 2→1 through 9→8) |
+| `src/lib/generateWeeklyPdf.ts` | Create (supervisor-specific PDF with tables and data) |
+| `src/pages/AuditDashboardSupervisor.tsx` | Edit (use new PDF generator, show pending tag) |
 

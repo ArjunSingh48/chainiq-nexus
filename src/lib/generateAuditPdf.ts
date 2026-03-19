@@ -96,7 +96,7 @@ export function generateAuditPdf(data: AuditData): void {
 
   let y = 42;
 
-  y = addSectionHeader(doc, '2. REQUEST OVERVIEW', y);
+  y = addSectionHeader(doc, '1. REQUEST OVERVIEW', y);
   if (req) {
     y = addField(doc, 'Category', req.category_l2 || 'N/A', y);
     y = addField(doc, 'Country', req.country || 'N/A', y);
@@ -116,7 +116,7 @@ export function generateAuditPdf(data: AuditData): void {
   }
   y += 4;
 
-  y = addSectionHeader(doc, '3. AI INTERACTION LOG', y);
+  y = addSectionHeader(doc, '2. INTERACTION LOG', y);
   if (data.chatMessages.length > 0) {
     for (const msg of data.chatMessages) {
       const prefix = msg.role === 'user' ? 'USER' : 'AI';
@@ -145,7 +145,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '4. SUPPLIER ANALYSIS', y);
+  y = addSectionHeader(doc, '3. SUPPLIER ANALYSIS', y);
   y = addField(doc, 'Total Evaluated', data.suppliers.length.toString(), y);
   y = addField(doc, 'Shortlisted', data.top10.length.toString(), y);
   y += 2;
@@ -183,7 +183,7 @@ export function generateAuditPdf(data: AuditData): void {
   }
 
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '5. INTERPRETATION & DECISION', y);
+  y = addSectionHeader(doc, '4. INTERPRETATION & DECISION', y);
   y = addField(doc, 'Selected', data.selectedSupplier?.name ?? 'None', y);
   if (engine?.recommendation) {
     y = addField(doc, 'Status', engine.recommendation.status, y);
@@ -211,7 +211,7 @@ export function generateAuditPdf(data: AuditData): void {
   }
 
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '6. POLICY & VALIDATION TRACE', y);
+  y = addSectionHeader(doc, '5. POLICY & VALIDATION TRACE', y);
   if (engine?.validation) {
     y = addField(doc, 'Completeness', engine.validation.completeness, y);
     y = addField(doc, 'Issues Found', engine.validation.issues_detected.length.toString(), y);
@@ -260,7 +260,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '7. ORDER & DELIVERY', y);
+  y = addSectionHeader(doc, '6. ORDER & DELIVERY', y);
   if (data.consignments.length > 0) {
     for (const c of data.consignments) {
       y = addField(doc, 'Supplier', c.supplierName, y);
@@ -275,7 +275,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '8. NOTIFICATIONS LOG', y);
+  y = addSectionHeader(doc, '7. NOTIFICATIONS LOG', y);
   const approved = data.notifications.filter(n => n.type === 'approved');
   const pending = data.notifications.filter(n => n.type === 'pending');
   const rejected = data.notifications.filter(n => n.type === 'rejected');
@@ -288,7 +288,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 250) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '9. FINAL SUMMARY', y);
+  y = addSectionHeader(doc, '8. FINAL SUMMARY', y);
   y = addField(doc, 'Total Suppliers', data.suppliers.length.toString(), y);
   y = addField(doc, 'Orders Placed', data.consignments.length.toString(), y);
   y = addField(doc, 'Workflow Status', data.workflow?.status ?? 'N/A', y);
