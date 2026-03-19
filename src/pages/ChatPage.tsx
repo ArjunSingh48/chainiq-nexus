@@ -28,6 +28,7 @@ const ChatPage = () => {
   const [nextNotifId, setNextNotifId] = useState(100);
   const [consignments, setConsignments] = useState<Consignment[]>([]);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
+  const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
 
   const handleSubmit = useCallback(async (message: string) => {
     setShowAnalysis(true);
