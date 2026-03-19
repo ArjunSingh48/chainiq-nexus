@@ -149,7 +149,7 @@ const SupervisorPage = () => {
 
               <div className="glass-card rounded-lg p-5 space-y-3">
                 <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Risk Analysis</h3>
-                <DonutChart risks={selected.risks} />
+                <DonutChart risks={selected.risks} tt={tt} />
               </div>
 
               <div className="glass-card rounded-lg p-5 space-y-4">
@@ -158,13 +158,15 @@ const SupervisorPage = () => {
                   label="Cost Impact"
                   value={selected.costValue}
                   color="hsl(358, 87%, 52%)"
-                  tooltip={`Estimated cost impact: ${selected.costValue}% of allocated budget will be consumed by this procurement.`}
+                  tooltipText={`Estimated cost impact: ${selected.costValue}% of allocated budget will be consumed by this procurement.`}
+                  tt={tt}
                 />
                 <BarChart
                   label="Potential Benefit"
                   value={selected.benefitValue}
                   color="hsl(160, 84%, 39%)"
-                  tooltip={`Projected benefit: ${selected.benefitValue}% improvement in operational efficiency and value delivery.`}
+                  tooltipText={`Projected benefit: ${selected.benefitValue}% improvement in operational efficiency and value delivery.`}
+                  tt={tt}
                 />
               </div>
             </>
