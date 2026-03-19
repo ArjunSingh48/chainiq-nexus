@@ -88,7 +88,7 @@ function DonutChart({ risks, tt }: { risks: SupervisorRequest['risks']; tt: Retu
 function BarChart({ label, value, color, tooltipText, tt, disabled }: { label: string; value: number; color: string; tooltipText: string; tt: ReturnType<typeof useCursorTooltip>; disabled?: boolean }) {
   return (
     <div
-      className="space-y-1 cursor-pointer"
+      className={`space-y-1 cursor-pointer ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
       onMouseEnter={(e) => tt.show(tooltipText, e)}
       onMouseMove={tt.move}
       onMouseLeave={tt.hide}
