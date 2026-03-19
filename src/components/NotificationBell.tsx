@@ -28,7 +28,7 @@ const NotificationBell = ({ notifications }: Props) => {
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} className="relative p-2 rounded-full hover:bg-muted transition-colors text-white">
-        <Bell className="w-5 h-5 text-foreground" />
+        <Bell className="w-5 h-5" />
         {notifications.length > 0 && (
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />
         )}
