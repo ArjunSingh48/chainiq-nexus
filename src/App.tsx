@@ -7,6 +7,8 @@ import Index from "./pages/Index.tsx";
 import PortalSelect from "./pages/PortalSelect.tsx";
 import ChatPage from "./pages/ChatPage.tsx";
 import SupervisorPage from "./pages/SupervisorPage.tsx";
+import AuditDashboardUser from "./pages/AuditDashboardUser.tsx";
+import AuditDashboardSupervisor from "./pages/AuditDashboardSupervisor.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -22,6 +24,8 @@ const App = () => (
           <Route path="/portal" element={<PortalSelect />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/supervisor" element={<SupervisorPage />} />
+          <Route path="/audit-dashboard/user" element={<AuditDashboardUser />} />
+          <Route path="/audit-dashboard/supervisor" element={<AuditDashboardSupervisor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

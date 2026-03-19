@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Supplier, getTop10, Notification } from '@/data/suppliers';
 import ChatInterface from '@/components/ChatInterface';
 import GlobeView from '@/components/GlobeView';
@@ -112,6 +114,7 @@ const buildInterpretedSummary = (workflow: WorkflowResponse) => {
 };
 
 const ChatPage = () => {
+  const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>('chat');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [workflow, setWorkflow] = useState<WorkflowResponse | null>(null);
@@ -234,9 +237,20 @@ const ChatPage = () => {
       className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]"
       style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" }}
     >
+      {phase === 'chat' && (
+        <button onClick={() => navigate('/portal')} className="absolute left-4 top-4 z-50 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
+
       {phase !== 'chat' && (
         <header className="absolute left-0 right-0 top-0 z-40 flex h-12 items-center justify-between border-b border-border bg-black/70 px-4 text-white backdrop-blur">
-          <ProqAILogo />
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/portal')} className="text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <ProqAILogo />
+          </div>
           <NotificationBell notifications={notifications} />
         </header>
       )}
@@ -280,6 +294,7 @@ const ChatPage = () => {
 
       {phase !== 'chat' && (
         <AuditButton
+          role="procurement"
           auditData={{
             workflow,
             suppliers,
