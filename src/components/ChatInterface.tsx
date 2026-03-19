@@ -26,7 +26,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   useEffect(() => {
     return () => {
