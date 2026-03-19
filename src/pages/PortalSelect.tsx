@@ -23,7 +23,10 @@ const PortalSelect = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
+          <button onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
           <ProqAILogo />
         </div>
       </header>

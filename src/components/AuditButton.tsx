@@ -1,13 +1,21 @@
+import { useNavigate } from 'react-router-dom';
 import { FileText } from 'lucide-react';
 import { generateAuditPdf, AuditData } from '@/lib/generateAuditPdf';
 
 interface Props {
   auditData: AuditData;
+  role?: 'procurement' | 'supervisor';
 }
 
-const AuditButton = ({ auditData }: Props) => {
+const AuditButton = ({ auditData, role = 'procurement' }: Props) => {
+  const navigate = useNavigate();
+
   const handleClick = () => {
-    generateAuditPdf(auditData);
+    if (role === 'supervisor') {
+      navigate('/audit-dashboard/supervisor');
+    } else {
+      navigate('/audit-dashboard/user');
+    }
   };
 
   return (
