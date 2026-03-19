@@ -8,6 +8,7 @@ import AnalysisOverlay from '@/components/AnalysisOverlay';
 import ProqAILogo from '@/components/ProqAILogo';
 import NotificationBell from '@/components/NotificationBell';
 import TrackingCard, { Consignment } from '@/components/TrackingCard';
+import AuditButton from '@/components/AuditButton';
 import { runWorkflow, WorkflowResponse } from '@/lib/workflow';
 
 type Phase = 'chat' | 'results';
