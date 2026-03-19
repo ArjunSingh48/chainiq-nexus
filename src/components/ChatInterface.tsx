@@ -4,12 +4,12 @@ import { Send, ChevronUp, ChevronDown, Mic, MicOff } from 'lucide-react';
 interface Message {
   role: 'ai' | 'user';
   text: string;
-  interpretedAs?: string;
+  interpretedAs?: Array<{ label: string; value: string }>;
 }
 
 export interface ChatSubmitResult {
   reply: string;
-  interpretedAs?: string;
+  interpretedAs?: Array<{ label: string; value: string }>;
 }
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   onSubmit: (msg: string) => Promise<ChatSubmitResult>;
   phase: 'chat' | 'results';
   loading: boolean;
-  onMessagesChange?: (messages: { role: string; text: string }[]) => void;
+  onMessagesChange?: (messages: { role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]) => void;
 }
 
 const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }: Props) => {
@@ -106,6 +106,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
 
   const renderMessageBubble = (message: Message, index: number, compact = false) => {
     const isUser = message.role === 'user';
+    const showInterpretationPopover = isUser && (!!message.interpretedAs || (loading && index === messages.length - 1));
     return (
       <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'} ${compact ? '' : 'animate-fade-in'}`}>
         <div className={`group relative max-w-[85%] ${isUser ? 'items-end' : ''}`}>
@@ -113,10 +114,27 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
             {!isUser && <span className="mb-1 block text-xs font-bold text-emerald-400">ProqAI</span>}
             {message.text}
           </div>
-          {isUser && message.interpretedAs && (
+          {showInterpretationPopover && (
             <div className="pointer-events-none absolute -top-2 right-0 z-20 hidden w-72 -translate-y-full rounded-xl border border-sky-400/30 bg-slate-950/95 p-3 text-left shadow-2xl group-hover:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">Interpreted As</p>
-              <p className="mt-2 text-xs leading-5 text-slate-200">{message.interpretedAs}</p>
+              {message.interpretedAs ? (
+                <div className="mt-2 space-y-2">
+                  {message.interpretedAs.map((item) => (
+                    <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-200">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-2 rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Status</p>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-300">
+                  <span className="h-2 w-2 rounded-full bg-sky-300 animate-pulse" />
+                  <span>Parsing request and building structured interpretation...</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -159,11 +177,19 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
   // Minimized bar
   if (minimized && !expanded) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex h-[60px] cursor-pointer items-center gap-3 border-t border-white/10 bg-slate-950/95 px-4" onClick={() => setExpanded(true)}>
-        <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-        <p className="chat-mono flex-1 truncate text-sm text-slate-100">
-          {lastMessage?.role === 'ai' ? 'ProqAI' : 'You'}: {lastMessage?.text}
-        </p>
+      <div
+        className="fixed bottom-4 left-4 z-50 flex w-[min(360px,calc(100vw-2rem))] cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/88 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md transition-colors hover:bg-slate-900/92"
+        onClick={() => setExpanded(true)}
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15">
+          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Chat</p>
+          <p className="chat-mono truncate text-sm text-slate-100">
+            {lastMessage?.role === 'ai' ? 'ProqAI' : 'You'}: {lastMessage?.text}
+          </p>
+        </div>
         <ChevronUp className="h-4 w-4 text-slate-300" />
       </div>
     );
@@ -172,8 +198,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
   // Expanded from minimized
   if (minimized && expanded) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex h-[50vh] flex-col border-t border-white/10 bg-slate-950/96 animate-slide-in-right" style={{ animation: 'none', transform: 'translateY(0)' }}>
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+      <div className="fixed bottom-4 left-4 z-50 flex h-[min(560px,68vh)] w-[min(460px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/96 shadow-2xl shadow-black/50 animate-slide-in-right" style={{ animation: 'none', transform: 'translateY(0)' }}>
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">ProqAI Chat</span>
           <button onClick={() => setExpanded(false)}><ChevronDown className="h-4 w-4 text-slate-300" /></button>
         </div>

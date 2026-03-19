@@ -97,7 +97,7 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
   }, [consignments, onArcClick]);
 
   return (
-    <div ref={containerRef} className="w-full h-full rounded-xl overflow-hidden" style={{ background: '#000011' }}>
+    <div ref={containerRef} className="w-full h-full overflow-hidden" style={{ background: '#000011' }}>
       {dimensions.width > 0 && (
         <Globe
           ref={globeRef}

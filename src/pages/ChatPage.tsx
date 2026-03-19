@@ -16,19 +16,33 @@ type Phase = 'chat' | 'results';
 
 const ZURICH = { lat: 47.3769, lng: 8.5417 };
 
+const fieldLabelMap: Record<string, string> = {
+  category_l2: 'Category',
+  country: 'Delivery country',
+  quantity: 'Quantity',
+  budget_amount: 'Budget',
+  currency: 'Currency',
+};
+
+const formatMissingFields = (workflow: WorkflowResponse) => {
+  return workflow.missing_critical_fields.map((item) => fieldLabelMap[item.field] ?? item.field);
+};
+
 const buildInterpretedSummary = (workflow: WorkflowResponse) => {
   const request = workflow.request;
-  const parts = [
-    request.category_l2 || 'unknown category',
-    request.quantity ? `qty ${request.quantity}` : null,
-    request.budget_amount ? `${request.currency} ${request.budget_amount.toLocaleString()}` : null,
-    request.delivery_countries.length > 0 ? `deliver to ${request.delivery_countries.join(', ')}` : null,
-    request.required_by_date ? `needed by ${request.required_by_date}` : null,
-    request.preferred_supplier_mentioned ? `preferred ${request.preferred_supplier_mentioned}` : null,
-    request.data_residency_constraint ? 'data residency required' : null,
-    request.esg_requirement ? 'ESG required' : null,
-  ].filter(Boolean);
-  return parts.join(' · ');
+  return [
+    ...(workflow.status === 'needs_clarification' && workflow.missing_critical_fields.length > 0
+      ? [{ label: 'Missing Inputs', value: formatMissingFields(workflow).join(', ') }]
+      : []),
+    { label: 'Category', value: request.category_l2 || 'Unknown' },
+    ...(request.quantity ? [{ label: 'Quantity', value: String(request.quantity) }] : []),
+    ...(request.budget_amount ? [{ label: 'Budget', value: `${request.currency} ${request.budget_amount.toLocaleString()}` }] : []),
+    ...(request.delivery_countries.length > 0 ? [{ label: 'Delivery', value: request.delivery_countries.join(', ') }] : []),
+    ...(request.required_by_date ? [{ label: 'Required By', value: request.required_by_date }] : []),
+    ...(request.preferred_supplier_mentioned ? [{ label: 'Preferred Supplier', value: request.preferred_supplier_mentioned }] : []),
+    ...(request.data_residency_constraint ? [{ label: 'Data Residency', value: 'Required' }] : []),
+    ...(request.esg_requirement ? [{ label: 'ESG', value: 'Required' }] : []),
+  ];
 };
 
 const ChatPage = () => {
@@ -44,7 +58,7 @@ const ChatPage = () => {
   const [nextNotifId, setNextNotifId] = useState(100);
   const [consignments, setConsignments] = useState<Consignment[]>([]);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
-  const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]>([]);
   const [pendingNotifications, setPendingNotifications] = useState<Notification[] | null>(null);
   const [approvalPopupApprovals, setApprovalPopupApprovals] = useState<Array<{ approver: string; reason: string; rule: string }>>([]);
 
@@ -56,6 +70,7 @@ const ChatPage = () => {
       const interpretedAs = buildInterpretedSummary(result);
 
       if (result.status === 'needs_clarification') {
+        const missingLabels = formatMissingFields(result);
         setWorkflow(result);
         setSuppliers([]);
         setTop10([]);
@@ -64,7 +79,7 @@ const ChatPage = () => {
         setFocusPoint(null);
         setPhase('chat');
         return {
-          reply: result.follow_up_question ?? result.ui.summary,
+          reply: `${result.follow_up_question ?? result.ui.summary}${missingLabels.length > 0 ? `\n\nNeeded from requester: ${missingLabels.join(', ')}.` : ''}`,
           interpretedAs,
         };
       }
@@ -165,7 +180,7 @@ const ChatPage = () => {
       />
 
       {phase !== 'chat' && (
-        <div className="absolute inset-0 flex pb-[60px] pt-12">
+        <div className="absolute inset-0 flex pt-12">
           <div className="relative h-full w-[60%]">
             <GlobeView
               suppliers={suppliers}

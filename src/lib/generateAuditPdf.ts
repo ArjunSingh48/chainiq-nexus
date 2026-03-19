@@ -11,7 +11,7 @@ export interface AuditData {
   selectedSupplier: Supplier | null;
   notifications: Notification[];
   consignments: Consignment[];
-  chatMessages: { role: string; text: string }[];
+  chatMessages: { role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[];
   sessionId: string | null;
 }
 
@@ -40,7 +40,7 @@ function addWrappedText(doc: jsPDF, text: string, x: number, y: number, maxWidth
   doc.setTextColor(255, 255, 255);
   const lines: string[] = doc.splitTextToSize(text, maxWidth);
   for (const line of lines) {
-    if (y > 280) { doc.addPage(); y = 20; }
+    if (y > 280) { doc.addPage(); ensureDarkBg(doc); y = 20; }
     doc.text(line, x, y);
     y += 5;
   }
@@ -52,6 +52,25 @@ function ensureDarkBg(doc: jsPDF) {
   doc.rect(0, 0, 210, 297, 'F');
 }
 
+function formatValue(value: unknown): string {
+  if (value == null) return 'N/A';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => formatValue(item)).join(', ');
+  }
+  return JSON.stringify(value);
+}
+
+function addKeyValueBlock(doc: jsPDF, title: string, entries: Array<{ label: string; value: unknown }>, y: number): number {
+  if (entries.length === 0) return y;
+  y = addWrappedText(doc, title, 16, y, 170);
+  for (const entry of entries) {
+    y = addWrappedText(doc, `${entry.label}: ${formatValue(entry.value)}`, 20, y, 166);
+  }
+  return y + 2;
+}
+
 export function generateAuditPdf(data: AuditData): void {
   const doc = new jsPDF();
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -60,7 +79,6 @@ export function generateAuditPdf(data: AuditData): void {
 
   ensureDarkBg(doc);
 
-  // 1. HEADER
   doc.setFillColor(16, 185, 129);
   doc.rect(0, 0, 210, 32, 'F');
   doc.setFontSize(20);
@@ -77,7 +95,6 @@ export function generateAuditPdf(data: AuditData): void {
 
   let y = 42;
 
-  // 2. REQUEST OVERVIEW
   y = addSectionHeader(doc, '2. REQUEST OVERVIEW', y);
   if (req) {
     y = addField(doc, 'Category', req.category_l2 || 'N/A', y);
@@ -85,12 +102,19 @@ export function generateAuditPdf(data: AuditData): void {
     y = addField(doc, 'Quantity', req.quantity?.toString() ?? 'N/A', y);
     y = addField(doc, 'Budget', req.budget_amount ? `${req.budget_amount.toLocaleString()} ${req.currency}` : 'N/A', y);
     y = addField(doc, 'Required by', req.required_by_date ?? 'N/A', y);
+    y = addField(doc, 'Preferred supplier', req.preferred_supplier_mentioned ?? 'N/A', y);
+    y = addField(doc, 'Delivery countries', req.delivery_countries.join(', ') || 'N/A', y);
   } else {
     y = addField(doc, 'Status', 'No workflow data available', y);
   }
+  if (data.workflow?.missing_critical_fields?.length) {
+    y = addWrappedText(doc, 'Missing Critical Fields', 16, y + 2, 170);
+    for (const item of data.workflow.missing_critical_fields) {
+      y = addWrappedText(doc, `- ${item.field} (${item.reason})${item.attempted_value ? ` attempted: ${item.attempted_value}` : ''}`, 20, y, 166);
+    }
+  }
   y += 4;
 
-  // 3. AI INTERACTION LOG
   y = addSectionHeader(doc, '3. AI INTERACTION LOG', y);
   if (data.chatMessages.length > 0) {
     for (const msg of data.chatMessages) {
@@ -106,6 +130,12 @@ export function generateAuditPdf(data: AuditData): void {
         doc.text(line, 30, y);
         y += 4.5;
       }
+      if (msg.interpretedAs?.length) {
+        y = addWrappedText(doc, 'Interpreted As', 30, y, 160);
+        for (const item of msg.interpretedAs) {
+          y = addWrappedText(doc, `${item.label}: ${item.value}`, 34, y, 156);
+        }
+      }
       y += 2;
     }
   } else {
@@ -113,7 +143,6 @@ export function generateAuditPdf(data: AuditData): void {
   }
   y += 4;
 
-  // 4. SUPPLIER ANALYSIS
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
   y = addSectionHeader(doc, '4. SUPPLIER ANALYSIS', y);
   y = addField(doc, 'Total Evaluated', data.suppliers.length.toString(), y);
@@ -123,7 +152,7 @@ export function generateAuditPdf(data: AuditData): void {
   if (data.top10.length > 0) {
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Supplier', 'Country', 'Price', 'ESG', 'Quality', 'Risk', 'Rank']],
+      head: [['#', 'Supplier', 'Country', 'Price', 'ESG', 'Quality', 'Risk', 'Policy']],
       body: data.top10.map((s, i) => [
         (i + 1).toString(),
         s.name,
@@ -132,7 +161,7 @@ export function generateAuditPdf(data: AuditData): void {
         s.esgScore?.toString() ?? 'N/A',
         s.qualityScore?.toString() ?? 'N/A',
         s.riskScore?.toString() ?? 'N/A',
-        s.rank.toString(),
+        s.policyCompliant === false ? 'warning' : 'pass',
       ]),
       theme: 'grid',
       styles: {
@@ -152,47 +181,83 @@ export function generateAuditPdf(data: AuditData): void {
     y = (doc as any).lastAutoTable.finalY + 8;
   }
 
-  // 5. DECISION SUMMARY
-  if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '5. DECISION SUMMARY', y);
+  if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
+  y = addSectionHeader(doc, '5. INTERPRETATION & DECISION', y);
   y = addField(doc, 'Selected', data.selectedSupplier?.name ?? 'None', y);
   if (engine?.recommendation) {
     y = addField(doc, 'Status', engine.recommendation.status, y);
-    y = addWrappedText(doc, `Reason: ${engine.recommendation.reason}`, 16, y, 170);
+    y = addWrappedText(doc, `Reason: ${engine.recommendation.reason ?? engine.recommendation.rationale ?? 'N/A'}`, 16, y, 170);
+    if (engine.recommendation.approvals_required?.length) {
+      y = addWrappedText(doc, 'Approvals Required', 16, y + 2, 170);
+      for (const approval of engine.recommendation.approvals_required) {
+        y = addWrappedText(doc, `${approval.approver}: ${approval.reason} (${approval.rule})`, 20, y, 166);
+      }
+    }
+    if (engine.recommendation.clarifications_needed?.length) {
+      y = addWrappedText(doc, 'Clarifications Needed', 16, y + 2, 170);
+      for (const item of engine.recommendation.clarifications_needed) {
+        y = addWrappedText(doc, `${item.field}: ${item.rule} -> ${item.escalate_to}`, 20, y, 166);
+      }
+    }
   }
-  y += 4;
+  if (engine?.request_interpretation) {
+    y = addKeyValueBlock(
+      doc,
+      'Request Interpretation',
+      Object.entries(engine.request_interpretation).map(([label, value]) => ({ label, value })),
+      y + 4
+    );
+  }
 
-  // 6. COMPLIANCE & VALIDATION
-  if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '6. COMPLIANCE & VALIDATION', y);
+  if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
+  y = addSectionHeader(doc, '6. POLICY & VALIDATION TRACE', y);
   if (engine?.validation) {
     y = addField(doc, 'Completeness', engine.validation.completeness, y);
-    const issues = engine.validation.issues_detected;
-    y = addField(doc, 'Issues Found', issues.length.toString(), y);
-    for (const issue of issues.slice(0, 5)) {
-      y = addWrappedText(doc, `[${issue.severity}] ${issue.description}`, 18, y, 168);
+    y = addField(doc, 'Issues Found', engine.validation.issues_detected.length.toString(), y);
+    for (const issue of engine.validation.issues_detected) {
+      y = addWrappedText(doc, `[${issue.severity}] ${issue.type}: ${issue.description}`, 18, y, 168);
+      y = addWrappedText(doc, `Action: ${issue.action_required}`, 22, y, 164);
     }
   }
-  if (engine?.escalations) {
-    const blocking = engine.escalations.filter(e => e.blocking);
-    const nonBlocking = engine.escalations.filter(e => !e.blocking);
-    y += 2;
-    y = addField(doc, 'Blocking', blocking.length.toString(), y);
-    y = addField(doc, 'Non-blocking', nonBlocking.length.toString(), y);
-    for (const esc of blocking) {
-      y = addWrappedText(doc, `! ${esc.rule}: ${esc.trigger}`, 18, y, 168);
-    }
+  if (engine?.policy_evaluation) {
+    y = addKeyValueBlock(doc, 'Policy Evaluation', [
+      { label: 'Approval rule', value: engine.policy_evaluation.approval_threshold.rule_applied },
+      { label: 'Basis', value: engine.policy_evaluation.approval_threshold.basis },
+      { label: 'Quotes required', value: engine.policy_evaluation.approval_threshold.quotes_required },
+      { label: 'Approvers', value: engine.policy_evaluation.approval_threshold.approvers },
+      { label: 'Deviation approval', value: engine.policy_evaluation.approval_threshold.deviation_approval },
+      { label: 'Eligible suppliers', value: engine.policy_evaluation.eligible_supplier_count },
+      { label: 'Category rules', value: engine.policy_evaluation.category_rules_applied },
+      { label: 'Geography rules', value: engine.policy_evaluation.geography_rules_applied },
+      { label: 'Preferred supplier check', value: engine.policy_evaluation.preferred_supplier },
+    ], y + 2);
   }
   if (engine?.policy_trace?.length) {
-    y += 2;
-    y = addField(doc, 'Policy Checks', engine.policy_trace.length.toString(), y);
-    for (const entry of engine.policy_trace.slice(0, 8)) {
-      y = addWrappedText(doc, `[${entry.status}] ${entry.title}: ${entry.detail}`, 18, y, 168);
+    y = addWrappedText(doc, 'Policy Trace', 16, y + 2, 170);
+    for (const entry of engine.policy_trace) {
+      y = addWrappedText(doc, `[${entry.status}] ${entry.title}`, 20, y, 166);
+      y = addWrappedText(doc, `${entry.summary}`, 24, y, 162);
+      y = addWrappedText(doc, `${entry.detail}`, 24, y, 162);
+      y = addWrappedText(doc, `Rule ${entry.rule}${entry.approver ? ` -> ${entry.approver}` : ''}${entry.blocking ? ' (blocking)' : ''}`, 24, y, 162);
     }
+  }
+  if (engine?.escalations?.length) {
+    y = addWrappedText(doc, 'Escalations', 16, y + 2, 170);
+    for (const esc of engine.escalations) {
+      y = addWrappedText(doc, `${esc.rule}: ${esc.trigger}`, 20, y, 166);
+      y = addWrappedText(doc, `Escalate to ${esc.escalate_to} | blocking: ${esc.blocking ? 'yes' : 'no'}`, 24, y, 162);
+    }
+  }
+  if (engine?.audit_trail) {
+    y = addKeyValueBlock(
+      doc,
+      'Audit Trail',
+      Object.entries(engine.audit_trail).map(([label, value]) => ({ label, value })),
+      y + 2
+    );
   }
   y += 4;
 
-  // 7. ORDER & DELIVERY
   if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
   y = addSectionHeader(doc, '7. ORDER & DELIVERY', y);
   if (data.consignments.length > 0) {
@@ -208,7 +273,6 @@ export function generateAuditPdf(data: AuditData): void {
   }
   y += 4;
 
-  // 8. NOTIFICATIONS LOG
   if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
   y = addSectionHeader(doc, '8. NOTIFICATIONS LOG', y);
   const approved = data.notifications.filter(n => n.type === 'approved');
@@ -222,16 +286,15 @@ export function generateAuditPdf(data: AuditData): void {
   for (const n of rejected) { y = addWrappedText(doc, `x ${n.message}`, 18, y, 168); }
   y += 4;
 
-  // 9. FINAL SUMMARY
   if (y > 250) { doc.addPage(); ensureDarkBg(doc); y = 20; }
   y = addSectionHeader(doc, '9. FINAL SUMMARY', y);
   y = addField(doc, 'Total Suppliers', data.suppliers.length.toString(), y);
   y = addField(doc, 'Orders Placed', data.consignments.length.toString(), y);
-  if (engine?.recommendation?.reason) {
-    y = addWrappedText(doc, `Key Justification: ${engine.recommendation.reason}`, 16, y + 2, 170);
+  y = addField(doc, 'Workflow Status', data.workflow?.status ?? 'N/A', y);
+  if (engine?.recommendation?.reason || engine?.recommendation?.rationale) {
+    y = addWrappedText(doc, `Key Justification: ${engine.recommendation.reason ?? engine.recommendation.rationale}`, 16, y + 2, 170);
   }
 
-  // Footer on every page
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);

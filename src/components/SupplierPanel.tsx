@@ -36,6 +36,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
   const validation = workflow?.engine_output?.validation;
   const policyTrace = workflow?.engine_output?.policy_trace ?? [];
   const request = workflow?.request;
+  const clarificationItems = recommendation?.clarifications_needed ?? [];
 
   const passedCount = policyTrace.filter((entry) => entry.status === 'passed').length;
   const failedCount = policyTrace.filter((entry) => entry.status === 'failed').length;
@@ -64,6 +65,19 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
                 <p className="text-xs uppercase tracking-widest text-slate-400">Recommendation</p>
                 <p className="mt-1 font-semibold capitalize text-slate-50">{recommendation.status.split('_').join(' ')}</p>
                 <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason ?? recommendation.rationale}</p>
+                {clarificationItems.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
+                    <p className="text-xs uppercase tracking-widest text-sky-200">Needed From Requester</p>
+                    <div className="mt-2 space-y-2">
+                      {clarificationItems.map((item) => (
+                        <div key={`${item.rule}-${item.field}`} className="rounded-md border border-white/10 bg-white/5 px-2 py-2">
+                          <p className="text-xs font-medium text-slate-100">{item.field}</p>
+                          <p className="mt-1 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {item.rule}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             {validation && validation.issues_detected.length > 0 && (

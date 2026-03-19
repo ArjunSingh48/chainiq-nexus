@@ -78,6 +78,7 @@ export interface EngineOutput {
     preferred_supplier_if_resolved?: string;
     recommended_supplier?: string;
     rationale?: string;
+    clarifications_needed?: Array<{ field: string; rule: string; escalate_to: string }>;
     approvals_required?: Array<{ approver: string; reason: string; rule: string }>;
   };
   audit_trail?: Record<string, unknown>;
@@ -89,7 +90,7 @@ export interface WorkflowResponse {
   request_json_path: string;
   request: WorkflowRequestJson;
   parser_source: string;
-  missing_critical_fields: Array<{ field: string; reason: string }>;
+  missing_critical_fields: Array<{ field: string; reason: string; attempted_value?: string | null }>;
   follow_up_question: string | null;
   engine_output: EngineOutput | null;
   ui: {
