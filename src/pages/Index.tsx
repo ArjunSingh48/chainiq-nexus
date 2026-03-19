@@ -11,12 +11,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen text-foreground">
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-border text-white">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <ProqAILogo />
           <nav className="hidden lg:flex items-center gap-6">
             {navLinks.map(link => (
-              <a key={link} href="#" className="text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+              <a key={link} href="#" className="text-xs font-medium uppercase tracking-wider text-white/70 hover:text-white transition-colors">
                 {link}
               </a>
             ))}
@@ -24,7 +24,7 @@ const Index = () => {
           <div className="flex items-center gap-1">
             <NotificationBell notifications={defaultNotifications} />
             <button className="p-2 rounded-full hover:bg-muted transition-colors">
-              <Settings className="w-5 h-5 text-foreground" />
+              <Settings className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
