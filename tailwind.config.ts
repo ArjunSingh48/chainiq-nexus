@@ -57,6 +57,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        chainiq: {
+          red: "hsl(var(--chainiq-red))",
+          blue: "hsl(var(--chainiq-blue))",
+          green: "hsl(var(--chainiq-green))",
+          grey: "hsl(var(--chainiq-grey))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
