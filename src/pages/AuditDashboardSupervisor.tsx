@@ -19,10 +19,7 @@ const AuditDashboardSupervisor = () => {
   const [requests, setRequests] = useState(weeklyRequests);
 
   const handleDownload = () => {
-    generateAuditPdf({
-      workflow: null, suppliers: [], top10: [], selectedSupplier: null,
-      notifications: [], consignments: [], chatMessages: [], sessionId: null,
-    });
+    generateWeeklyPdf(requests);
   };
 
   const handleStatus = (id: string, status: 'approved' | 'rejected') => {
