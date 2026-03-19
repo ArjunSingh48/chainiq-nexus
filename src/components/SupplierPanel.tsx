@@ -2,6 +2,7 @@ import { Supplier } from '@/data/suppliers';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { PolicyTraceEntry, WorkflowResponse } from '@/lib/workflow';
 import { AlertTriangle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface Props {
   suppliers: Supplier[];
@@ -14,7 +15,7 @@ const flagUrl = (code: string) => `https://flagcdn.com/24x18/${code.toLowerCase(
 
 const formatMoney = (amount: number | null | undefined, currency: string) => {
   if (amount == null) return 'n/a';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(amount);
+  return formatCurrency(amount, currency);
 };
 
 const traceToneMap: Record<PolicyTraceEntry['status'], string> = {

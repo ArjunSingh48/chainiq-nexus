@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import type { WorkflowResponse } from './workflow';
 import type { Supplier, Notification } from '@/data/suppliers';
 import type { Consignment } from '@/components/TrackingCard';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 
 export interface AuditData {
   workflow: WorkflowResponse | null;
@@ -100,7 +101,7 @@ export function generateAuditPdf(data: AuditData): void {
     y = addField(doc, 'Category', req.category_l2 || 'N/A', y);
     y = addField(doc, 'Country', req.country || 'N/A', y);
     y = addField(doc, 'Quantity', req.quantity?.toString() ?? 'N/A', y);
-    y = addField(doc, 'Budget', req.budget_amount ? `${req.budget_amount.toLocaleString()} ${req.currency}` : 'N/A', y);
+    y = addField(doc, 'Budget', req.budget_amount ? formatCurrency(req.budget_amount, req.currency) : 'N/A', y);
     y = addField(doc, 'Required by', req.required_by_date ?? 'N/A', y);
     y = addField(doc, 'Preferred supplier', req.preferred_supplier_mentioned ?? 'N/A', y);
     y = addField(doc, 'Delivery countries', req.delivery_countries.join(', ') || 'N/A', y);
@@ -157,10 +158,10 @@ export function generateAuditPdf(data: AuditData): void {
         (i + 1).toString(),
         s.name,
         s.country,
-        s.unitPrice?.toFixed(2) ?? 'N/A',
-        s.esgScore?.toString() ?? 'N/A',
-        s.qualityScore?.toString() ?? 'N/A',
-        s.riskScore?.toString() ?? 'N/A',
+        s.unitPrice != null ? formatNumber(s.unitPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A',
+        s.esgScore != null ? formatNumber(s.esgScore) : 'N/A',
+        s.qualityScore != null ? formatNumber(s.qualityScore) : 'N/A',
+        s.riskScore != null ? formatNumber(s.riskScore) : 'N/A',
         s.policyCompliant === false ? 'warning' : 'pass',
       ]),
       theme: 'grid',

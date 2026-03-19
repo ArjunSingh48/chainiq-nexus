@@ -2,6 +2,7 @@ import { Supplier, placeOrder, restrictedRegions } from '@/data/suppliers';
 import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatNumber } from '@/lib/utils';
 
 interface Props {
   supplier: Supplier | null;
@@ -105,12 +106,17 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresAp
           </div>
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Unit Price</p>
-            <p className="font-bold text-foreground">{supplier.unitPrice != null ? `EUR ${supplier.unitPrice}` : 'n/a'}</p>
+            <p className="font-bold text-foreground">
+              {supplier.unitPrice != null ? `EUR ${formatNumber(supplier.unitPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'n/a'}
+            </p>
           </div>
         </div>
         {supplier.totalPrice != null && (
           <div className="mb-3 rounded-lg border border-border bg-black/20 p-3 text-xs text-muted-foreground">
-            Evaluated total: <span className="font-semibold text-foreground">EUR {supplier.totalPrice}</span>
+            Evaluated total:{' '}
+            <span className="font-semibold text-foreground">
+              EUR {formatNumber(supplier.totalPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
           </div>
         )}
         {supplier.accessibility === 'restricted' && (
