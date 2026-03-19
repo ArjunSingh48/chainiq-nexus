@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Supplier, getTop10, Notification } from '@/data/suppliers';
 import ChatInterface from '@/components/ChatInterface';
 import GlobeView from '@/components/GlobeView';
