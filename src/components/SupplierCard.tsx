@@ -65,7 +65,7 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
         </button>
         <h3 className="text-lg font-bold text-foreground mb-1">{supplier.name}</h3>
         <p className="text-sm text-muted-foreground mb-3">{supplier.country}</p>
-        <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+        <div className="grid grid-cols-3 gap-2 text-sm mb-4">
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Rank</p>
             <p className="font-bold text-foreground">#{supplier.rank}</p>
@@ -79,8 +79,16 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
             <p className="font-bold text-accent">{supplier.esgScore}</p>
           </div>
           <div className="glass-card rounded-md p-2 text-center">
-            <p className="text-xs text-muted-foreground">Confidence</p>
-            <p className="font-bold text-secondary">{supplier.confidenceScore}</p>
+            <p className="text-xs text-muted-foreground">Quality</p>
+            <p className="font-bold text-secondary">{supplier.qualityScore}</p>
+          </div>
+          <div className="glass-card rounded-md p-2 text-center">
+            <p className="text-xs text-muted-foreground">Risk</p>
+            <p className="font-bold text-destructive">{supplier.riskScore}</p>
+          </div>
+          <div className="glass-card rounded-md p-2 text-center">
+            <p className="text-xs text-muted-foreground">Unit Price</p>
+            <p className="font-bold text-foreground">${supplier.unitPrice}</p>
           </div>
         </div>
         <div className="flex gap-2">
