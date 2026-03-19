@@ -275,7 +275,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '8. NOTIFICATIONS LOG', y);
+  y = addSectionHeader(doc, '7. NOTIFICATIONS LOG', y);
   const approved = data.notifications.filter(n => n.type === 'approved');
   const pending = data.notifications.filter(n => n.type === 'pending');
   const rejected = data.notifications.filter(n => n.type === 'rejected');
