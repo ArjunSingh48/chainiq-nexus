@@ -91,11 +91,16 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
             <p className="font-bold text-foreground">${supplier.unitPrice}</p>
           </div>
         </div>
+        {supplier.accessibility === 'restricted' && (
+          <div className="mb-3 p-2 rounded-lg bg-destructive/15 border border-destructive/30 text-destructive text-xs font-medium text-center">
+            ⚠️ This center is currently unavailable due to active conflicts
+          </div>
+        )}
         <div className="flex gap-2">
           <button onClick={() => setShowReason(true)} className="flex-1 text-xs py-2 px-3 rounded-lg bg-muted hover:bg-muted/70 text-foreground transition-colors font-medium">
             Recommendation
           </button>
-          <button onClick={handleOrder} disabled={ordering} className="flex-1 text-xs py-2 px-3 rounded-lg bg-primary hover:bg-primary/80 text-primary-foreground transition-colors font-medium disabled:opacity-50">
+          <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 text-xs py-2 px-3 rounded-lg bg-primary hover:bg-primary/80 text-primary-foreground transition-colors font-medium disabled:opacity-50">
             {ordering ? 'Placing…' : 'Place Order'}
           </button>
         </div>
