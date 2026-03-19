@@ -294,6 +294,7 @@ const ChatPage = () => {
 
       {phase !== 'chat' && (
         <AuditButton
+          role="procurement"
           auditData={{
             workflow,
             suppliers,
