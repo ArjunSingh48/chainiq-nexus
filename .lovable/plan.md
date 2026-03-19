@@ -1,63 +1,50 @@
 
 
-# Plan: Audit Document Generation System
+# Plan: Dual Portal System
 
 ## Overview
-Add an "AUDIT" button fixed above the chatbot bar that collects all session data and generates a downloadable PDF audit report using jsPDF + jspdf-autotable.
+Add a portal selection page and a supervisor dashboard. Three new files, two small edits to existing files.
 
 ## Changes
 
-### 1. Install jsPDF dependency
-Add `jspdf` and `jspdf-autotable` packages.
+### 1. Create `src/pages/PortalSelect.tsx`
+Two glassmorphism cards centered on screen (reuse `glass-card` class). Card 1: "Procurement Officer" navigates to `/chat`. Card 2: "Supervisor" navigates to `/supervisor`. Use existing ProqAI logo header, same dark radial gradient background as other pages.
 
-### 2. Create `src/lib/generateAuditPdf.ts`
-A standalone function that accepts an `AuditData` object and produces a downloadable PDF.
+### 2. Create `src/pages/SupervisorPage.tsx`
+Split layout: left 40% analysis panel, right 60% request inbox.
 
-**AuditData interface** aggregates:
-- `workflow: WorkflowResponse | null` (request details, engine output, recommendation, escalations, validation)
-- `suppliers: Supplier[]` (all suppliers)
-- `top10: Supplier[]` (shortlisted)
-- `selectedSupplier: Supplier | null`
-- `notifications: Notification[]`
-- `consignments: Consignment[]`
-- `chatMessages: { role: string; text: string }[]`
-- `sessionId: string | null`
+**State**: `requests[]` array of mock data, `selectedRequest` index.
 
-**PDF sections** (generated with jsPDF):
-1. **Header** — "ProqAI Audit Report", subtitle, timestamp, session ID
-2. **Request Overview** — category, country, quantity, budget, currency from `workflow.request`
-3. **AI Interaction Log** — chat messages listed chronologically
-4. **Supplier Analysis** — total count + table of top 10 (Name, Price, ESG, Quality, Risk, Rank) using jspdf-autotable
-5. **Decision Summary** — selected supplier name, recommendation status + reason from `engine_output.recommendation`
-6. **Compliance & Validation** — validation issues, escalations (blocking/non-blocking), policy compliance flags
-7. **Order & Delivery** — consignment details (supplier, origin, destination, units, order ID)
-8. **Notifications Log** — grouped by approved/pending/rejected
-9. **Final Summary** — total suppliers, key justification
+**Mock data** (5-6 requests), each containing:
+- `title`, `subtitle`, `supplier`, `explanationPoints` (array of strings like "Mentioned", "Quality", "Risk", "Preferred")
+- `risks`: `{ financial: number, operational: number, esg: number, geopolitical: number }` (0-100)
+- `costValue`, `benefitValue` (0-100)
+- `status`: 'pending' | 'approved' | 'rejected'
 
-Style: clean enterprise look, dark header bar, section headers with lines, consistent fonts. Auto page breaks handled by jsPDF.
+**Right side** (request inbox):
+- List of cards using `glass-card` styling. Each shows title + subtitle + expand chevron.
+- Clicking a card selects it (border highlight) and loads its data into the left panel.
+- Expanded view shows explanation points as bullet list + Approve (green) / Reject (red) buttons.
 
-### 3. Create `src/components/AuditButton.tsx`
-- Glassmorphism button labeled "AUDIT" with `FileText` icon
-- Positioned fixed, right side, `bottom-[76px]` (above the 60px chatbot bar)
-- On click: builds `AuditData` from props, calls `generateAuditPdf()`, triggers download
-- Hover: scale + glow effect
+**Left side** (analysis dashboard):
+- **Risk Donut Chart**: Pure SVG donut (4 colored arc segments using `stroke-dasharray`/`stroke-dashoffset` on `<circle>` elements). Tooltip on hover with 1-line risk explanation.
+- **Cost vs Benefit Bars**: Two horizontal bars using simple divs with rounded edges and percentage widths. Tooltip on hover.
 
-### 4. Update `src/pages/ChatPage.tsx`
-- Import `AuditButton`
-- Render it when `phase !== 'chat'` (only visible after results are shown)
-- Pass all required state: `workflow`, `suppliers`, `top10`, `selectedSupplier`, `notifications`, `consignments`, `sessionId`
-- Also need to expose chat messages from `ChatInterface` — add a `messagesRef` (useRef) or lift messages state up to ChatPage so the audit can access the conversation log
+No new libraries needed -- SVG for donut, divs for bars, existing Tooltip component for hover.
 
-### 5. Expose chat messages
-- Add a `onMessagesChange` callback prop to `ChatInterface` that fires whenever messages update
-- Store messages in ChatPage state: `chatMessages`
-- Pass to AuditButton
+### 3. Create `src/data/supervisorMockData.ts`
+Export the mock requests array to keep the page file clean.
 
-## Technical Details
+### 4. Update `src/App.tsx`
+Add routes: `/portal` for `PortalSelect`, `/supervisor` for `SupervisorPage`.
 
-- **jsPDF** for PDF creation — lightweight, no server needed
-- **jspdf-autotable** plugin for the supplier table
-- Download triggered via `doc.save('ProqAI_Audit_Report_<timestamp>.pdf')`
-- All data comes from existing React state — no API calls needed
-- Button only shows in results phase to ensure there's data to report
+### 5. Update `src/pages/Index.tsx`
+Change the CTA button to navigate to `/portal` instead of `/chat`.
+
+## Technical Notes
+- Zero new dependencies
+- SVG donut chart: 4 `<circle>` elements with `stroke-dasharray` calculated from risk values
+- Bars: simple `<div>` with `width: X%` and Tailwind classes
+- Approve/Reject buttons update local state only (mock)
+- Reuses: `glass-card`, `cta-impact`, `ProqAILogo`, `NotificationBell`, existing color palette
 
