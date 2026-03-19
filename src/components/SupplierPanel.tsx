@@ -46,7 +46,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
     <div className="glass-card flex h-full flex-col border-l border-white/10">
       <div className="border-b border-white/10 p-4">
         {request && (
-          <div className="mt-3 space-y-3 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
               <p className="text-xs uppercase tracking-widest text-slate-400">Request</p>
               <p className="mt-1 font-semibold text-slate-50">{request.category_l2}</p>

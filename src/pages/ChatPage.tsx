@@ -28,21 +28,40 @@ const formatMissingFields = (workflow: WorkflowResponse) => {
   return workflow.missing_critical_fields.map((item) => fieldLabelMap[item.field] ?? item.field);
 };
 
+const displayExactValue = (value: unknown) => {
+  if (value === null || value === undefined || value === '') return null;
+  if (Array.isArray(value)) return value.length > 0 ? value.join(', ') : null;
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  return String(value);
+};
+
 const buildInterpretedSummary = (workflow: WorkflowResponse) => {
   const request = workflow.request;
+  const entries: Array<[string, unknown]> = [
+    ['category_l1', request.category_l1],
+    ['category_l2', request.category_l2],
+    ['country', request.country],
+    ['site', request.site],
+    ['currency', request.currency],
+    ['budget_amount', request.budget_amount],
+    ['quantity', request.quantity],
+    ['unit_of_measure', request.unit_of_measure],
+    ['required_by_date', request.required_by_date],
+    ['preferred_supplier_mentioned', request.preferred_supplier_mentioned],
+    ['incumbent_supplier', request.incumbent_supplier],
+    ['delivery_countries', request.delivery_countries],
+    ['data_residency_constraint', request.data_residency_constraint],
+    ['esg_requirement', request.esg_requirement],
+  ];
+
   return [
     ...(workflow.status === 'needs_clarification' && workflow.missing_critical_fields.length > 0
       ? [{ label: 'Missing Inputs', value: formatMissingFields(workflow).join(', ') }]
       : []),
-    { label: 'Category', value: request.category_l2 || 'Unknown' },
-    ...(request.quantity ? [{ label: 'Quantity', value: String(request.quantity) }] : []),
-    ...(request.budget_amount ? [{ label: 'Budget', value: `${request.currency} ${request.budget_amount.toLocaleString()}` }] : []),
-    ...(request.delivery_countries.length > 0 ? [{ label: 'Delivery', value: request.delivery_countries.join(', ') }] : []),
-    ...(request.required_by_date ? [{ label: 'Required By', value: request.required_by_date }] : []),
-    ...(request.preferred_supplier_mentioned ? [{ label: 'Preferred Supplier', value: request.preferred_supplier_mentioned }] : []),
-    ...(request.data_residency_constraint ? [{ label: 'Data Residency', value: 'Required' }] : []),
-    ...(request.esg_requirement ? [{ label: 'ESG', value: 'Required' }] : []),
-  ];
+    ...entries
+      .map(([label, rawValue]) => ({ label, value: displayExactValue(rawValue) })),
+  ]
+    .filter((item): item is { label: string; value: string } => item.value !== null);
 };
 
 const ChatPage = () => {
@@ -181,7 +200,7 @@ const ChatPage = () => {
 
       {phase !== 'chat' && (
         <div className="absolute inset-0 flex pt-12">
-          <div className="relative h-full w-[60%]">
+          <div className="relative h-full w-[55%]">
             <GlobeView
               suppliers={suppliers}
               top10={top10}
@@ -202,7 +221,7 @@ const ChatPage = () => {
               onClose={() => setSelectedConsignment(null)}
             />
           </div>
-          <div className="h-full w-[40%]">
+          <div className="h-full w-[45%]">
             <SupplierPanel suppliers={top10} loading={showAnalysis} onSelect={handleSupplierSelect} workflow={workflow} />
           </div>
         </div>

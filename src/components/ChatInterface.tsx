@@ -246,9 +246,12 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
           height: `min(${windowSize.height}px, calc(100vh - 2rem))`,
         }}
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+        <div
+          className="flex cursor-pointer items-center justify-between border-b border-white/10 px-4 py-3"
+          onClick={() => setExpanded(false)}
+        >
           <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">ProqAI Chat</span>
-          <button onClick={() => setExpanded(false)}><ChevronDown className="h-4 w-4 text-slate-300" /></button>
+          <ChevronDown className="h-4 w-4 text-slate-300" />
         </div>
         <div
           className="absolute right-0 top-0 h-5 w-5 cursor-nesw-resize"
