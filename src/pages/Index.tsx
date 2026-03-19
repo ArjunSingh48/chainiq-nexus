@@ -37,7 +37,7 @@ const Index = () => {
             <span className="text-primary">Innovative</span>{' '}
             Procurement Solutions
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-foreground/90 font-medium max-w-2xl mx-auto drop-shadow-lg">
             AI-powered autonomous sourcing that ensures compliance, optimizes costs, and delivers audit-ready procurement decisions in real time.
           </p>
           <button
