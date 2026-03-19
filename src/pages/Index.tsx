@@ -11,7 +11,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen text-foreground">
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-border text-white">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <ProqAILogo />
           <nav className="hidden lg:flex items-center gap-6">
