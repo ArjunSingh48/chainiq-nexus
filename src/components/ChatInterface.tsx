@@ -5,11 +5,13 @@ interface Message {
   role: 'ai' | 'user';
   text: string;
   interpretedAs?: Array<{ label: string; value: string }>;
+  neededFromRequester?: string;
 }
 
 export interface ChatSubmitResult {
-  reply: string;
+  reply: string | string[];
   interpretedAs?: Array<{ label: string; value: string }>;
+  neededFromRequester?: string;
 }
 
 interface Props {
@@ -22,7 +24,7 @@ interface Props {
 
 const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }: Props) => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: 'Describe what you need to buy. I will analyze it, run the supplier engine, and return the shortlist.' },
+    { role: 'ai', text: 'Describe what you need to buy. I will analyse it, run the supplier engine, and return the shortlist.' },
   ]);
   const [input, setInput] = useState('');
   const [expanded, setExpanded] = useState(false);
@@ -124,7 +126,14 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
             break;
           }
         }
-        next.push({ role: 'ai', text: result.reply });
+        const replies = Array.isArray(result.reply) ? result.reply : [result.reply];
+        for (let i = 0; i < replies.length; i += 1) {
+          next.push({
+            role: 'ai',
+            text: replies[i],
+            neededFromRequester: i === replies.length - 1 ? result.neededFromRequester : undefined,
+          });
+        }
         return next;
       });
     } catch (error) {
@@ -144,14 +153,14 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
             {message.text}
           </div>
           {showInterpretationPopover && (
-            <div className="pointer-events-none absolute -top-2 right-0 z-20 hidden w-60 -translate-y-full rounded-xl border border-sky-400/30 bg-slate-950/95 p-3 text-left shadow-2xl group-hover:block">
+            <div className="absolute -top-2 right-0 z-20 hidden max-h-[min(24rem,calc(100vh-6rem))] w-[min(26rem,calc(100vw-3rem))] overflow-y-auto -translate-y-full rounded-xl border border-sky-400/30 bg-slate-950/95 p-3 text-left shadow-2xl group-hover:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">Interpreted As</p>
               {message.interpretedAs ? (
                 <div className="mt-2 space-y-2">
                   {message.interpretedAs.map((item) => (
                     <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs leading-5 text-slate-200">
-                      <span className="mr-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</span>
-                      <span>{item.value}</span>
+                      <span className="mr-2 inline-block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</span>
+                      <span className="break-words whitespace-normal">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -164,6 +173,13 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
                   </div>
                 </div>
               )}
+            </div>
+          )}
+          {!isUser && message.neededFromRequester && (
+            <div className="pointer-events-none absolute left-0 top-full z-10 hidden pt-2 group-hover:block">
+              <div className="text-[11px] text-slate-400">
+                <span>Needed from requester:</span> <span>{message.neededFromRequester}</span>
+              </div>
             </div>
           )}
         </div>

@@ -24,8 +24,55 @@ const fieldLabelMap: Record<string, string> = {
   currency: 'Currency',
 };
 
+const requestCountryToUiCountry = (countryCode: string) => (countryCode === 'UAE' ? 'AE' : countryCode);
+
+
+const countryDisplayName = (countryCode: string) => {
+  const uiCode = requestCountryToUiCountry(countryCode);
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(uiCode) ?? countryCode;
+  } catch {
+    return countryCode;
+  }
+};
+
+const formatCountryDisplay = (countryCode: string) => `${countryDisplayName(countryCode)} (${countryCode})`;
+
 const formatMissingFields = (workflow: WorkflowResponse) => {
   return workflow.missing_critical_fields.map((item) => fieldLabelMap[item.field] ?? item.field);
+};
+
+const buildClarificationReplies = (workflow: WorkflowResponse) => {
+  const replies: string[] = [];
+  const invalidCountry = workflow.missing_critical_fields.find(
+    (item) => item.field === 'country' && item.reason === 'invalid' && item.attempted_value,
+  );
+  let followUpMessage = workflow.follow_up_question ?? workflow.ui.summary;
+
+  if (invalidCountry?.attempted_value) {
+    const countryText = workflow.request.country
+      ? formatCountryDisplay(workflow.request.country)
+      : invalidCountry.attempted_value;
+    const invalidCountryMessage =
+      `I interpreted the delivery country as ${countryText}, but that country is not supported by the current policy dataset.`;
+    const backendCountryMessage =
+      `I interpreted the delivery country as ${invalidCountry.attempted_value}, but that country is not supported by the current policy dataset.`;
+
+    followUpMessage = followUpMessage
+      .replace(backendCountryMessage, '')
+      .replace(invalidCountryMessage, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    replies.push(
+      invalidCountryMessage,
+    );
+  }
+
+  if (followUpMessage) {
+    replies.push(followUpMessage);
+  }
+  return replies;
 };
 
 const displayExactValue = (value: unknown) => {
@@ -98,8 +145,9 @@ const ChatPage = () => {
         setFocusPoint(null);
         setPhase('chat');
         return {
-          reply: `${result.follow_up_question ?? result.ui.summary}${missingLabels.length > 0 ? `\n\nNeeded from requester: ${missingLabels.join(', ')}.` : ''}`,
+          reply: buildClarificationReplies(result),
           interpretedAs,
+          neededFromRequester: missingLabels.length > 0 ? missingLabels.join(', ') : undefined,
         };
       }
 
@@ -182,7 +230,10 @@ const ChatPage = () => {
   }, [pendingNotifications]);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]">
+    <div
+      className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]"
+      style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" }}
+    >
       {phase !== 'chat' && (
         <header className="absolute left-0 right-0 top-0 z-40 flex h-12 items-center justify-between border-b border-border bg-black/70 px-4 text-white backdrop-blur">
           <ProqAILogo />
