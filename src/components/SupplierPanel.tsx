@@ -44,12 +44,13 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
   const approvalCount = policyTrace.filter((entry) => entry.status === 'needs_approval').length;
 
   return (
-    <div className="glass-card flex h-full flex-col border-l border-white/10">
-      <div className="border-b border-white/10 p-4">
+    <div className="glass-card flex h-full min-h-0 flex-col border-l border-white/10">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="border-b border-white/10 p-4 pb-2">
         {request && (
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-              <p className="text-xs uppercase tracking-widest text-slate-400">Request</p>
+              <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Request</p>
               <p className="mt-1 font-semibold text-slate-50">{request.category_l2}</p>
               <p className="text-slate-300">
                 Qty {request.quantity ?? 'n/a'} · {formatMoney(request.budget_amount, request.currency)} ·{' '}
@@ -63,7 +64,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
             </div>
             {recommendation && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-                <p className="text-xs uppercase tracking-widest text-slate-400">Recommendation</p>
+                <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Recommendation</p>
                 <p className="mt-1 font-semibold capitalize text-slate-50">{recommendation.status.split('_').join(' ')}</p>
                 <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason ?? recommendation.rationale}</p>
                 {clarificationItems.length > 0 && (
@@ -99,7 +100,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
             )}
             {policyTrace.length > 0 && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-                <p className="text-xs uppercase tracking-widest text-slate-400">Policy Trace</p>
+                <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Policy Trace</p>
                 <p className="mt-1 text-xs text-slate-300">
                   Passed {passedCount} · Needs approval {approvalCount} · Failed {failedCount}
                 </p>
@@ -126,9 +127,9 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
             )}
           </div>
         )}
-        <h3 className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-300">Shortlist</h3>
-      </div>
-      <div className="flex-1 space-y-2 overflow-y-auto p-3">
+          <h3 className="mt-3 text-xs font-bold uppercase tracking-widest text-slate-300">Shortlist</h3>
+        </div>
+        <div className="space-y-2 p-3">
         {loading ? (
           Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="rounded-lg border border-white/10 bg-slate-900/92 p-3 space-y-2">
@@ -174,6 +175,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
             </button>
           ))
         )}
+        </div>
       </div>
     </div>
   );

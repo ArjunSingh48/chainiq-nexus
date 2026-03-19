@@ -250,8 +250,8 @@ const ChatPage = () => {
       />
 
       {phase !== 'chat' && (
-        <div className="absolute inset-0 flex pt-12">
-          <div className="relative h-full w-[55%]">
+        <div className="absolute inset-0 flex min-h-0 pt-12">
+          <div className="relative h-full min-h-0 w-[55%]">
             <GlobeView
               suppliers={suppliers}
               top10={top10}
@@ -272,7 +272,7 @@ const ChatPage = () => {
               onClose={() => setSelectedConsignment(null)}
             />
           </div>
-          <div className="h-full w-[45%]">
+          <div className="h-full min-h-0 w-[45%]">
             <SupplierPanel suppliers={top10} loading={showAnalysis} onSelect={handleSupplierSelect} workflow={workflow} />
           </div>
         </div>
