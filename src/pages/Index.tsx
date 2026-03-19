@@ -16,7 +16,7 @@ const Index = () => {
           <ProqAILogo />
           <nav className="hidden lg:flex items-center gap-6">
             {navLinks.map(link => (
-              <a key={link} href="#" className="text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+              <a key={link} href="#" className="text-xs font-medium uppercase tracking-wider text-white/70 hover:text-white transition-colors">
                 {link}
               </a>
             ))}

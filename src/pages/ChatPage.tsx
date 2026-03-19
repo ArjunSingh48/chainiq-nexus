@@ -110,7 +110,7 @@ const ChatPage = () => {
     <div className="h-screen w-screen overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #e6f2ff 0%, #cce7ff 100%)' }}>
       {/* Header for globe view */}
       {phase !== 'chat' && (
-        <header className="absolute top-0 left-0 right-0 z-40 glass-card border-b border-border h-12 flex items-center justify-between px-4">
+        <header className="absolute top-0 left-0 right-0 z-40 bg-black border-b border-border h-12 flex items-center justify-between px-4 text-white">
           <ProqAILogo />
           <div className="flex items-center gap-1">
             <NotificationBell notifications={notifications} />
