@@ -27,9 +27,11 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
   const [input, setInput] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [windowSize, setWindowSize] = useState({ width: 460, height: 560 });
   const recognitionRef = useRef<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const resizeStateRef = useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -47,6 +49,33 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
       inputRef.current?.focus();
     }
   }, [loading, minimized, expanded]);
+
+  useEffect(() => {
+    const handleMove = (event: MouseEvent) => {
+      const resizeState = resizeStateRef.current;
+      if (!resizeState) return;
+      const nextWidth = Math.min(
+        Math.max(resizeState.startWidth + (event.clientX - resizeState.startX), 320),
+        Math.max(window.innerWidth - 32, 320),
+      );
+      const nextHeight = Math.min(
+        Math.max(resizeState.startHeight - (event.clientY - resizeState.startY), 280),
+        Math.max(window.innerHeight - 32, 280),
+      );
+      setWindowSize({ width: nextWidth, height: nextHeight });
+    };
+
+    const handleUp = () => {
+      resizeStateRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, []);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -115,14 +144,14 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
             {message.text}
           </div>
           {showInterpretationPopover && (
-            <div className="pointer-events-none absolute -top-2 right-0 z-20 hidden w-72 -translate-y-full rounded-xl border border-sky-400/30 bg-slate-950/95 p-3 text-left shadow-2xl group-hover:block">
+            <div className="pointer-events-none absolute -top-2 right-0 z-20 hidden w-60 -translate-y-full rounded-xl border border-sky-400/30 bg-slate-950/95 p-3 text-left shadow-2xl group-hover:block">
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">Interpreted As</p>
               {message.interpretedAs ? (
                 <div className="mt-2 space-y-2">
                   {message.interpretedAs.map((item) => (
-                    <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-200">{item.value}</p>
+                    <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs leading-5 text-slate-200">
+                      <span className="mr-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</span>
+                      <span>{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -161,6 +190,15 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
   );
 
   const lastMessage = messages[messages.length - 1];
+  const startResize = (event: { preventDefault: () => void; clientX: number; clientY: number }) => {
+    event.preventDefault();
+    resizeStateRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startWidth: windowSize.width,
+      startHeight: windowSize.height,
+    };
+  };
   const typingBubble = (
     <div className="flex justify-start animate-fade-in">
       <div className="max-w-[85%] rounded-xl border border-slate-700 bg-slate-900/95 px-4 py-3 text-slate-50 shadow-lg shadow-black/20">
@@ -178,7 +216,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
   if (minimized && !expanded) {
     return (
       <div
-        className="fixed bottom-4 left-4 z-50 flex w-[min(360px,calc(100vw-2rem))] cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/88 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md transition-colors hover:bg-slate-900/92"
+        className="fixed bottom-4 left-4 z-50 flex cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-slate-950/88 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md transition-colors hover:bg-slate-900/92"
+        style={{ width: `min(${windowSize.width}px, calc(100vw - 2rem))` }}
         onClick={() => setExpanded(true)}
       >
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15">
@@ -198,11 +237,24 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }
   // Expanded from minimized
   if (minimized && expanded) {
     return (
-      <div className="fixed bottom-4 left-4 z-50 flex h-[min(560px,68vh)] w-[min(460px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/96 shadow-2xl shadow-black/50 animate-slide-in-right" style={{ animation: 'none', transform: 'translateY(0)' }}>
+      <div
+        className="fixed bottom-4 left-4 z-50 flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-slate-950/88 shadow-2xl shadow-black/50 backdrop-blur-xl animate-slide-in-right"
+        style={{
+          animation: 'none',
+          transform: 'translateY(0)',
+          width: `min(${windowSize.width}px, calc(100vw - 2rem))`,
+          height: `min(${windowSize.height}px, calc(100vh - 2rem))`,
+        }}
+      >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">ProqAI Chat</span>
           <button onClick={() => setExpanded(false)}><ChevronDown className="h-4 w-4 text-slate-300" /></button>
         </div>
+        <div
+          className="absolute right-0 top-0 h-5 w-5 cursor-nesw-resize"
+          onMouseDown={startResize}
+          title="Resize chat"
+        />
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.map((m, i) => renderMessageBubble(m, i, true))}
           {loading && typingBubble}
