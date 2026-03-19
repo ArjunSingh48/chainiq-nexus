@@ -15,7 +15,7 @@ interface Props {
 
 const ChatInterface = ({ minimized, onFirstMessage, onConstraintMessage, phase }: Props) => {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: 'Hello, I am ProqAI, your smart procurement assistant. How can I assist you in your procurement journey today?' },
+    { role: 'ai', text: 'Hello, I am ProqAI, your smart assistant. How can I assist you today?' },
   ]);
   const [input, setInput] = useState('');
   const [expanded, setExpanded] = useState(false);
