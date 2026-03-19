@@ -8,6 +8,7 @@ import AnalysisOverlay from '@/components/AnalysisOverlay';
 import ProqAILogo from '@/components/ProqAILogo';
 import NotificationBell from '@/components/NotificationBell';
 import TrackingCard, { Consignment } from '@/components/TrackingCard';
+import AuditButton from '@/components/AuditButton';
 import { runWorkflow, WorkflowResponse } from '@/lib/workflow';
 
 type Phase = 'chat' | 'results';
@@ -27,6 +28,7 @@ const ChatPage = () => {
   const [nextNotifId, setNextNotifId] = useState(100);
   const [consignments, setConsignments] = useState<Consignment[]>([]);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
+  const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
 
   const handleSubmit = useCallback(async (message: string) => {
     setShowAnalysis(true);
@@ -115,6 +117,7 @@ const ChatPage = () => {
         onSubmit={handleSubmit}
         phase={phase}
         loading={showAnalysis}
+        onMessagesChange={setChatMessages}
       />
 
       {phase !== 'chat' && (
@@ -143,6 +146,21 @@ const ChatPage = () => {
             <SupplierPanel suppliers={top10} loading={showAnalysis} onSelect={handleSupplierSelect} workflow={workflow} />
           </div>
         </div>
+      )}
+
+      {phase !== 'chat' && (
+        <AuditButton
+          auditData={{
+            workflow,
+            suppliers,
+            top10,
+            selectedSupplier,
+            notifications,
+            consignments,
+            chatMessages,
+            sessionId,
+          }}
+        />
       )}
 
       <AnalysisOverlay visible={showAnalysis} />
