@@ -30,8 +30,8 @@ const SettingsPanel = ({ settings, onSettingsChange }: Props) => {
 
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className="p-2 rounded-full hover:bg-muted transition-colors">
-        <Settings className="w-5 h-5 text-foreground" />
+      <button onClick={() => setOpen(!open)} className="p-2 rounded-full hover:bg-muted transition-colors text-white">
+        <Settings className="w-5 h-5" />
       </button>
       {open && (
         <>
