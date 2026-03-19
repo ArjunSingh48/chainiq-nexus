@@ -107,12 +107,12 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
           arcStartLng="startLng"
           arcEndLat="endLat"
           arcEndLng="endLng"
-          arcColor={() => ['rgba(255,255,255,0.7)', 'rgba(255,255,255,0.3)']}
-          arcAltitude={0.04}
-          arcStroke={0.4}
-          arcDashLength={0.15}
-          arcDashGap={0.1}
-          arcDashAnimateTime={4000}
+          arcColor={() => '#ffffff'}
+          arcAltitude={0.06}
+          arcStroke={1.2}
+          arcDashLength={1}
+          arcDashGap={0}
+          arcDashAnimateTime={0}
           onArcClick={handleArcClick}
           arcLabel={(d: any) => `<div style="background:rgba(255,255,255,0.9);padding:6px 10px;border-radius:6px;font-size:12px;color:#1a1a2e;box-shadow:0 2px 8px rgba(0,0,0,0.15);cursor:pointer;">📦 ${d.supplierName} → Zurich</div>`}
         />
