@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void;
   regulatoryEnabled?: boolean;
   onOrderPlaced?: (supplier: Supplier, status: 'success' | 'pending') => void;
+  onOrderSuccess?: (supplier: Supplier) => void;
 }
 
 const recommendations = [
@@ -17,7 +18,7 @@ const recommendations = [
   'Consistent on-time delivery (98.5% record)',
 ];
 
-const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPlaced }: Props) => {
+const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPlaced, onOrderSuccess }: Props) => {
   const [showReason, setShowReason] = useState(false);
   const [orderResult, setOrderResult] = useState<'success' | 'pending' | null>(null);
   const [ordering, setOrdering] = useState(false);
@@ -37,12 +38,21 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
     setOrderResult(result.status);
     setOrdering(false);
     onOrderPlaced?.(supplier, result.status);
+    if (result.status === 'success') {
+      onOrderSuccess?.(supplier);
+    }
   };
 
   const handleRegulatoryConfirm = async () => {
     setShowRegulatoryWarning(false);
     setOrderResult('pending');
     onOrderPlaced?.(supplier, 'pending');
+  };
+
+  const handleOrderModalClose = (open: boolean) => {
+    if (!open) {
+      setOrderResult(null);
+    }
   };
 
   const statusColor = supplier.accessibility === 'restricted' ? 'text-destructive' : 'text-accent';
@@ -112,7 +122,7 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
         </DialogContent>
       </Dialog>
 
-      <Dialog open={orderResult !== null} onOpenChange={() => setOrderResult(null)}>
+      <Dialog open={orderResult !== null} onOpenChange={handleOrderModalClose}>
         <DialogContent className="glass-card border-border text-center py-10">
           {orderResult === 'success' ? (
             <>
