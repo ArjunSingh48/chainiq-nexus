@@ -19,7 +19,7 @@ const ChatPage = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [settings, setSettings] = useState<SettingsState>({
     conflicts: false,
     blockages: false,
