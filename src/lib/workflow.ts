@@ -50,6 +50,7 @@ export interface EngineOutput {
     status: string;
     reason: string;
     preferred_supplier_if_resolved?: string;
+    approvals_required?: Array<{ approver: string; reason: string; rule: string }>;
   };
 }
 

@@ -7,15 +7,17 @@ interface Props {
   supplier: Supplier | null;
   onClose: () => void;
   regulatoryEnabled?: boolean;
+  requiresApproval?: boolean;
   onOrderPlaced?: (supplier: Supplier, status: 'success' | 'pending') => void;
   onOrderSuccess?: (supplier: Supplier) => void;
 }
 
-const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPlaced, onOrderSuccess }: Props) => {
+const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, requiresApproval = false, onOrderPlaced, onOrderSuccess }: Props) => {
   const [showReason, setShowReason] = useState(false);
   const [orderResult, setOrderResult] = useState<'success' | 'pending' | null>(null);
   const [ordering, setOrdering] = useState(false);
   const [showRegulatoryWarning, setShowRegulatoryWarning] = useState(false);
+  const [showApprovalWarning, setShowApprovalWarning] = useState(false);
 
   if (!supplier) return null;
 
@@ -33,6 +35,10 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
       setShowRegulatoryWarning(true);
       return;
     }
+    if (requiresApproval) {
+      setShowApprovalWarning(true);
+      return;
+    }
     setOrdering(true);
     const result = await placeOrder();
     setOrderResult(result.status);
@@ -41,6 +47,12 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
     if (result.status === 'success') {
       onOrderSuccess?.(supplier);
     }
+  };
+
+  const handleApprovalConfirm = () => {
+    setShowApprovalWarning(false);
+    setOrderResult('pending');
+    onOrderPlaced?.(supplier, 'pending');
   };
 
   const handleRegulatoryConfirm = async () => {
@@ -137,6 +149,18 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
           </p>
           <button onClick={handleRegulatoryConfirm} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80">
             Acknowledge and Escalate
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showApprovalWarning} onOpenChange={setShowApprovalWarning}>
+        <DialogContent className="glass-card border-border py-8 text-center">
+          <p className="mb-3 text-lg font-semibold text-foreground">Supervisor Approval Required</p>
+          <p className="mb-4 text-sm text-muted-foreground">
+            This order requires supervisor approval before it can be awarded. Submit for review?
+          </p>
+          <button onClick={handleApprovalConfirm} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80">
+            Submit for Review
           </button>
         </DialogContent>
       </Dialog>

@@ -11,9 +11,10 @@ interface Props {
   onSubmit: (msg: string) => Promise<string>;
   phase: 'chat' | 'results';
   loading: boolean;
+  onMessagesChange?: (messages: { role: string; text: string }[]) => void;
 }
 
-const ChatInterface = ({ minimized, onSubmit, phase, loading }: Props) => {
+const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }: Props) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'ai', text: 'Describe what you need to buy. I will analyze it, run the supplier engine, and return the shortlist.' },
   ]);
@@ -25,7 +26,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading }: Props) => {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    onMessagesChange?.(messages);
+  }, [messages, onMessagesChange]);
 
   useEffect(() => {
     return () => {
