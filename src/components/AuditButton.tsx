@@ -4,16 +4,18 @@ import { AuditData } from '@/lib/generateAuditPdf';
 interface Props {
   auditData: AuditData;
   role?: 'procurement' | 'supervisor';
+  onBeforeNavigate?: () => void;
 }
 
-const AuditButton = ({ auditData, role = 'procurement' }: Props) => {
+const AuditButton = ({ auditData, role = 'procurement', onBeforeNavigate }: Props) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
+    onBeforeNavigate?.();
     if (role === 'supervisor') {
-      navigate('/audit-dashboard/supervisor');
+      navigate('/audit-dashboard/supervisor', { state: { auditData } });
     } else {
-      navigate('/audit-dashboard/user');
+      navigate('/audit-dashboard/user', { state: { auditData } });
     }
   };
 

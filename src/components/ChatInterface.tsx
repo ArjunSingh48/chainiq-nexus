@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, ChevronUp, ChevronDown, Mic, MicOff } from 'lucide-react';
 
-interface Message {
+export interface Message {
   role: 'ai' | 'user';
   text: string;
   interpretedAs?: Array<{ label: string; value: string }>;
@@ -20,12 +20,15 @@ interface Props {
   phase: 'chat' | 'results';
   loading: boolean;
   onMessagesChange?: (messages: { role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]) => void;
+  initialMessages?: Message[];
 }
 
-const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange }: Props) => {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', text: 'Describe what you need to buy. I will analyse it, run the supplier engine, and return the shortlist.' },
-  ]);
+const DEFAULT_MESSAGES: Message[] = [
+  { role: 'ai', text: 'Describe what you need to buy. I will analyse it, run the supplier engine, and return the shortlist.' },
+];
+
+const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, initialMessages }: Props) => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages ?? DEFAULT_MESSAGES);
   const [input, setInput] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [isListening, setIsListening] = useState(false);

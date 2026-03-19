@@ -1,5 +1,25 @@
 import type { RiskValues } from '@/components/RiskDonutChart';
 
+export interface PolicyTraceItem {
+  title: string;
+  status: 'passed' | 'failed' | 'needs_approval' | 'warning';
+  summary: string;
+  detail: string;
+  rule: string;
+}
+
+export interface EscalationItem {
+  rule: string;
+  trigger: string;
+  escalateTo: string;
+  blocking: boolean;
+}
+
+export interface ChatLogEntry {
+  role: 'user' | 'ai';
+  text: string;
+}
+
 export interface UserAuditData {
   request: { category: string; country: string; quantity: number; budget: string };
   interpretation: { intent: string; constraints: string; followUps: string };
@@ -12,6 +32,9 @@ export interface UserAuditData {
   costValue: number;
   benefitValue: number;
   tracking: { status: string; origin: string; destination: string; units: number; eta: string };
+  policyTrace: PolicyTraceItem[];
+  escalations: EscalationItem[];
+  chatLog: ChatLogEntry[];
 }
 
 export const userAuditData: UserAuditData = {
@@ -52,6 +75,22 @@ export const userAuditData: UserAuditData = {
     units: 200,
     eta: '2026-04-02',
   },
+  policyTrace: [
+    { title: 'Budget Threshold', status: 'passed', summary: 'Within approval limit', detail: 'CHF 500,000 is within the auto-approval ceiling for IT Hardware.', rule: 'P-101' },
+    { title: 'Preferred Supplier', status: 'passed', summary: 'Vendor on approved list', detail: 'Apple (AT) is listed in the approved vendor registry for IT Hardware.', rule: 'P-202' },
+    { title: 'ESG Compliance', status: 'passed', summary: 'ISO 14001 certified', detail: 'Supplier holds valid ISO 14001 environmental management certification.', rule: 'P-305' },
+    { title: 'Geographical Restriction', status: 'warning', summary: 'Cross-border sourcing', detail: 'Sourcing from Austria to Switzerland triggers cross-border review.', rule: 'P-410' },
+    { title: 'Competitive Bidding', status: 'needs_approval', summary: '3 quotes obtained', detail: '3 of 3 required quotes received. Lowest qualified bidder selected.', rule: 'P-150' },
+  ],
+  escalations: [
+    { rule: 'P-410', trigger: 'Cross-border sourcing from AT to CH', escalateTo: 'Regional Procurement Lead', blocking: false },
+  ],
+  chatLog: [
+    { role: 'user', text: 'I need 200 laptops for our Zurich office, budget around CHF 500k, need them within 6 weeks.' },
+    { role: 'ai', text: 'I\'ve identified your request as IT Hardware — Laptops, 200 units for Switzerland with a budget of CHF 500,000. Running supplier analysis now.' },
+    { role: 'user', text: 'We need ESG-compliant suppliers and prefer Apple if possible.' },
+    { role: 'ai', text: 'Noted. I\'ve applied ESG compliance filter and prioritised Apple. 5 suppliers evaluated, Apple (AT) ranks #1 with a 94% confidence score.' },
+  ],
 };
 
 export interface WeeklyRequest {

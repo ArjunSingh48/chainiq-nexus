@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Supplier, getTop10, Notification } from '@/data/suppliers';
 import ChatInterface from '@/components/ChatInterface';
+import type { ChatSubmitResult, Message } from '@/components/ChatInterface';
 import GlobeView from '@/components/GlobeView';
 import SupplierPanel from '@/components/SupplierPanel';
 import SupplierCard from '@/components/SupplierCard';
@@ -12,7 +13,6 @@ import TrackingCard, { Consignment } from '@/components/TrackingCard';
 import AuditButton from '@/components/AuditButton';
 import { runWorkflow, WorkflowResponse } from '@/lib/workflow';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import type { ChatSubmitResult } from '@/components/ChatInterface';
 
 type Phase = 'chat' | 'results';
 type RequesterClarificationItem = { field: string; rule: string; escalate_to: string };
@@ -115,24 +115,41 @@ const buildInterpretedSummary = (workflow: WorkflowResponse) => {
     .filter((item): item is { label: string; value: string } => item.value !== null);
 };
 
+const CHAT_STATE_KEY = 'chatPageState';
+
+function saveChatState(state: Record<string, unknown>) {
+  try { sessionStorage.setItem(CHAT_STATE_KEY, JSON.stringify(state)); } catch { /* ignore */ }
+}
+
+function loadChatState(): Record<string, unknown> | null {
+  try {
+    const raw = sessionStorage.getItem(CHAT_STATE_KEY);
+    if (raw) { sessionStorage.removeItem(CHAT_STATE_KEY); return JSON.parse(raw); }
+  } catch { /* ignore */ }
+  return null;
+}
+
 const ChatPage = () => {
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<Phase>('chat');
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [workflow, setWorkflow] = useState<WorkflowResponse | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [top10, setTop10] = useState<Supplier[]>([]);
+  const location = useLocation();
+  const restored = location.state?.fromAudit ? loadChatState() : null;
+
+  const [phase, setPhase] = useState<Phase>((restored?.phase as Phase) ?? 'chat');
+  const [sessionId, setSessionId] = useState<string | null>((restored?.sessionId as string) ?? null);
+  const [workflow, setWorkflow] = useState<WorkflowResponse | null>((restored?.workflow as WorkflowResponse) ?? null);
+  const [suppliers, setSuppliers] = useState<Supplier[]>((restored?.suppliers as Supplier[]) ?? []);
+  const [top10, setTop10] = useState<Supplier[]>((restored?.top10 as Supplier[]) ?? []);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>((restored?.focusPoint as { lat: number; lng: number }) ?? null);
   const [showAnalysis, setShowAnalysis] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [nextNotifId, setNextNotifId] = useState(100);
-  const [consignments, setConsignments] = useState<Consignment[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>((restored?.notifications as Notification[]) ?? []);
+  const [nextNotifId, setNextNotifId] = useState((restored?.nextNotifId as number) ?? 100);
+  const [consignments, setConsignments] = useState<Consignment[]>((restored?.consignments as Consignment[]) ?? []);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
-  const [chatMessages, setChatMessages] = useState<{ role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]>([]);
+  const [chatMessages, setChatMessages] = useState<{ role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]>((restored?.chatMessages as any[]) ?? []);
   const [pendingNotifications, setPendingNotifications] = useState<Notification[] | null>(null);
   const [approvalPopupApprovals, setApprovalPopupApprovals] = useState<Array<{ approver: string; reason: string; rule: string }>>([]);
-  const [clarificationDecisions, setClarificationDecisions] = useState<Record<string, RequesterClarificationDecision>>({});
+  const [clarificationDecisions, setClarificationDecisions] = useState<Record<string, RequesterClarificationDecision>>((restored?.clarificationDecisions as Record<string, RequesterClarificationDecision>) ?? {});
 
   const handleSubmit = useCallback(async (message: string): Promise<ChatSubmitResult> => {
     setShowAnalysis(true);
@@ -259,6 +276,13 @@ const ChatPage = () => {
     });
   }, []);
 
+  const persistState = useCallback(() => {
+    saveChatState({
+      phase, sessionId, workflow, suppliers, top10, focusPoint,
+      notifications, nextNotifId, consignments, chatMessages, clarificationDecisions,
+    });
+  }, [phase, sessionId, workflow, suppliers, top10, focusPoint, notifications, nextNotifId, consignments, chatMessages, clarificationDecisions]);
+
   const clarificationItems = workflow?.engine_output?.recommendation?.clarifications_needed ?? [];
   const unresolvedClarifications = clarificationItems.filter((item) => !clarificationDecisions[item.rule]);
   const deniedClarifications = clarificationItems.filter((item) => clarificationDecisions[item.rule]?.decision === 'denied');
@@ -294,6 +318,7 @@ const ChatPage = () => {
         phase={phase}
         loading={showAnalysis}
         onMessagesChange={setChatMessages}
+        initialMessages={restored?.chatMessages ? (restored.chatMessages as Message[]) : undefined}
       />
 
       {phase !== 'chat' && (
@@ -337,6 +362,7 @@ const ChatPage = () => {
       {phase !== 'chat' && (
         <AuditButton
           role="procurement"
+          onBeforeNavigate={persistState}
           auditData={{
             workflow,
             suppliers,
