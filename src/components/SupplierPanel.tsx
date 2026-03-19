@@ -67,15 +67,25 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow }: Props) => {
                 <p className="mt-1 text-xs leading-5 text-slate-300">{recommendation.reason ?? recommendation.rationale}</p>
                 {clarificationItems.length > 0 && (
                   <div className="mt-3 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
-                    <p className="text-xs uppercase tracking-widest text-sky-200">Needed From Requester</p>
-                    <div className="mt-2 space-y-2">
-                      {clarificationItems.map((item) => (
-                        <div key={`${item.rule}-${item.field}`} className="rounded-md border border-white/10 bg-white/5 px-2 py-2">
-                          <p className="text-xs font-medium text-slate-100">{item.field}</p>
-                          <p className="mt-1 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {item.rule}</p>
+                    {clarificationItems.length === 1 ? (
+                      <p className="text-xs leading-5 text-sky-100">
+                        <span className="mr-2 uppercase tracking-widest text-sky-200">Needed From Requester</span>
+                        <span className="ml-2 uppercase tracking-widest text-sky-200/80 float-right">Rule {clarificationItems[0].rule}</span><br></br>
+                        <span className="font-medium text-slate-100">{clarificationItems[0].field}</span>
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-xs uppercase tracking-widest text-sky-200">Needed From Requester</p>
+                        <div className="mt-2 space-y-2">
+                          {clarificationItems.map((item) => (
+                            <div key={`${item.rule}-${item.field}`} className="rounded-md border border-white/10 bg-white/5 px-2 py-2">
+                              <p className="text-xs font-medium text-slate-100">{item.field}</p>
+                              <p className="mt-1 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {item.rule}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
