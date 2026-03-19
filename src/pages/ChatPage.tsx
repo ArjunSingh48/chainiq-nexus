@@ -118,6 +118,10 @@ const ChatPage = () => {
       supplierName: supplier.name,
       origin: { lat: supplier.lat, lng: supplier.lng },
       destination: ZURICH,
+      originCity: `${supplier.country}`,
+      originCountry: supplier.countryCode,
+      orderId: `${1234 + consignments.length}`,
+      units: 200,
       startTime: Date.now(),
     };
     setConsignments(prev => [...prev, newConsignment]);
