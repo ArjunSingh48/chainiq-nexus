@@ -82,7 +82,11 @@ const AuditDashboardSupervisor = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {req.status !== 'pending' && (
+                    {req.status === 'pending' ? (
+                      <span className="text-xs font-semibold uppercase tracking-wider text-yellow-500">
+                        PENDING
+                      </span>
+                    ) : (
                       <span className={`text-xs font-semibold uppercase tracking-wider ${req.status === 'approved' ? 'text-accent' : 'text-destructive'}`}>
                         {req.status}
                       </span>

@@ -288,7 +288,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 250) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '9. FINAL SUMMARY', y);
+  y = addSectionHeader(doc, '8. FINAL SUMMARY', y);
   y = addField(doc, 'Total Suppliers', data.suppliers.length.toString(), y);
   y = addField(doc, 'Orders Placed', data.consignments.length.toString(), y);
   y = addField(doc, 'Workflow Status', data.workflow?.status ?? 'N/A', y);
