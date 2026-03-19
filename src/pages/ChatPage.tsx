@@ -10,6 +10,7 @@ import NotificationBell from '@/components/NotificationBell';
 import TrackingCard, { Consignment } from '@/components/TrackingCard';
 import AuditButton from '@/components/AuditButton';
 import { runWorkflow, WorkflowResponse } from '@/lib/workflow';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 type Phase = 'chat' | 'results';
 
@@ -29,6 +30,8 @@ const ChatPage = () => {
   const [consignments, setConsignments] = useState<Consignment[]>([]);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
   const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
+  const [pendingNotifications, setPendingNotifications] = useState<Notification[] | null>(null);
+  const [approvalPopupApprovers, setApprovalPopupApprovers] = useState<string[]>([]);
 
   const handleSubmit = useCallback(async (message: string) => {
     setShowAnalysis(true);
@@ -52,8 +55,18 @@ const ChatPage = () => {
       setWorkflow(result);
       setSuppliers(workflowSuppliers);
       setTop10(getTop10(workflowSuppliers));
-      setNotifications(result.ui.notifications);
       setSelectedSupplier(workflowSuppliers[0] ?? null);
+
+      const approvalEscalations = (result.engine_output?.escalations ?? []).filter(
+        e => !e.blocking && e.escalate_to && e.escalate_to !== 'Requester Clarification'
+      );
+      const approvers = [...new Set(approvalEscalations.map(e => e.escalate_to))];
+      if (approvers.length > 0) {
+        setPendingNotifications(result.ui.notifications);
+        setApprovalPopupApprovers(approvers);
+      } else {
+        setNotifications(result.ui.notifications);
+      }
       setFocusPoint(workflowSuppliers[0] ? { lat: workflowSuppliers[0].lat, lng: workflowSuppliers[0].lng } : null);
       setPhase('results');
 
@@ -103,6 +116,14 @@ const ChatPage = () => {
     setSelectedSupplier(null);
   }, []);
 
+  const handleApprovalPopupDismiss = useCallback(() => {
+    if (pendingNotifications) {
+      setNotifications(pendingNotifications);
+      setPendingNotifications(null);
+    }
+    setApprovalPopupApprovers([]);
+  }, [pendingNotifications]);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]">
       {phase !== 'chat' && (
@@ -136,6 +157,7 @@ const ChatPage = () => {
               onClose={() => setSelectedSupplier(null)}
               onOrderPlaced={addNotification}
               onOrderSuccess={handleOrderSuccess}
+              requiresApproval={(workflow?.engine_output?.escalations ?? []).some(e => !e.blocking && e.escalate_to && e.escalate_to !== 'Requester Clarification')}
             />
             <TrackingCard
               consignment={selectedConsignment}
@@ -162,6 +184,22 @@ const ChatPage = () => {
           }}
         />
       )}
+      <Dialog open={approvalPopupApprovers.length > 0} onOpenChange={(open) => { if (!open) handleApprovalPopupDismiss(); }}>
+        <DialogContent className="glass-card border-border py-8 text-center">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">Attention</p>
+          <p className="mb-3 text-lg font-semibold text-foreground">This request requires approval</p>
+          <p className="mb-5 text-sm text-muted-foreground">
+            Before this order can proceed, sign-off is needed from:{' '}
+            <span className="font-medium text-foreground">{approvalPopupApprovers.join(', ')}</span>.
+          </p>
+          <button
+            onClick={handleApprovalPopupDismiss}
+            className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+          >
+            Understood
+          </button>
+        </DialogContent>
+      </Dialog>
 
       <AnalysisOverlay visible={showAnalysis} />
     </div>
