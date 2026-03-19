@@ -211,7 +211,7 @@ export function generateAuditPdf(data: AuditData): void {
   }
 
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '6. POLICY & VALIDATION TRACE', y);
+  y = addSectionHeader(doc, '5. POLICY & VALIDATION TRACE', y);
   if (engine?.validation) {
     y = addField(doc, 'Completeness', engine.validation.completeness, y);
     y = addField(doc, 'Issues Found', engine.validation.issues_detected.length.toString(), y);
