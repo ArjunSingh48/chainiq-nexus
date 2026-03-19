@@ -11,13 +11,6 @@ interface Props {
   onOrderSuccess?: (supplier: Supplier) => void;
 }
 
-const recommendations = [
-  'Strong price competitiveness across product categories',
-  'Average lead time 30% below industry standard',
-  'Full ESG compliance with ISO 14001 certification',
-  'Consistent on-time delivery (98.5% record)',
-];
-
 const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPlaced, onOrderSuccess }: Props) => {
   const [showReason, setShowReason] = useState(false);
   const [orderResult, setOrderResult] = useState<'success' | 'pending' | null>(null);
@@ -27,6 +20,13 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
   if (!supplier) return null;
 
   const isRestrictedRegion = restrictedRegions.includes(supplier.countryCode);
+  const recommendations = [
+    supplier.recommendationNote,
+    supplier.preferred ? 'Preferred supplier for this category.' : null,
+    supplier.incumbent ? 'Incumbent supplier on this request.' : null,
+    supplier.standardLeadTimeDays != null ? `Standard lead time: ${supplier.standardLeadTimeDays} days.` : null,
+    supplier.expeditedLeadTimeDays != null ? `Expedited lead time: ${supplier.expeditedLeadTimeDays} days.` : null,
+  ].filter(Boolean) as string[];
 
   const handleOrder = async () => {
     if (regulatoryEnabled && isRestrictedRegion) {
@@ -63,9 +63,9 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
         <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-4 h-4" />
         </button>
-        <h3 className="text-lg font-bold text-foreground mb-1">{supplier.name}</h3>
-        <p className="text-sm text-muted-foreground mb-3">{supplier.country}</p>
-        <div className="grid grid-cols-3 gap-2 text-sm mb-4">
+        <h3 className="mb-1 text-lg font-bold text-foreground">{supplier.name}</h3>
+        <p className="mb-3 text-sm text-muted-foreground">{supplier.country}</p>
+        <div className="mb-4 grid grid-cols-3 gap-2 text-sm">
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Rank</p>
             <p className="font-bold text-foreground">#{supplier.rank}</p>
@@ -76,32 +76,37 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
           </div>
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">ESG</p>
-            <p className="font-bold text-accent">{supplier.esgScore}</p>
+            <p className="font-bold text-accent">{supplier.esgScore ?? 'n/a'}</p>
           </div>
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Quality</p>
-            <p className="font-bold text-secondary">{supplier.qualityScore}</p>
+            <p className="font-bold text-secondary">{supplier.qualityScore ?? 'n/a'}</p>
           </div>
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Risk</p>
-            <p className="font-bold text-destructive">{supplier.riskScore}</p>
+            <p className="font-bold text-destructive">{supplier.riskScore ?? 'n/a'}</p>
           </div>
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Unit Price</p>
-            <p className="font-bold text-foreground">${supplier.unitPrice}</p>
+            <p className="font-bold text-foreground">{supplier.unitPrice != null ? `EUR ${supplier.unitPrice}` : 'n/a'}</p>
           </div>
         </div>
+        {supplier.totalPrice != null && (
+          <div className="mb-3 rounded-lg border border-border bg-black/20 p-3 text-xs text-muted-foreground">
+            Evaluated total: <span className="font-semibold text-foreground">EUR {supplier.totalPrice}</span>
+          </div>
+        )}
         {supplier.accessibility === 'restricted' && (
-          <div className="mb-3 p-2 rounded-lg bg-destructive/15 border border-destructive/30 text-destructive text-xs font-medium text-center">
-            ⚠️ This center is currently unavailable due to active conflicts
+          <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/15 p-2 text-center text-xs font-medium text-destructive">
+            Supplier was excluded or is not currently actionable.
           </div>
         )}
         <div className="flex gap-2">
-          <button onClick={() => setShowReason(true)} className="flex-1 text-xs py-2 px-3 rounded-lg bg-muted hover:bg-muted/70 text-foreground transition-colors font-medium">
+          <button onClick={() => setShowReason(true)} className="flex-1 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/70">
             Recommendation
           </button>
-          <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 text-xs py-2 px-3 rounded-lg bg-primary hover:bg-primary/80 text-primary-foreground transition-colors font-medium disabled:opacity-50">
-            {ordering ? 'Placing…' : 'Place Order'}
+          <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
+            {ordering ? 'Placing...' : 'Place Order'}
           </button>
         </div>
       </div>
@@ -112,41 +117,36 @@ const SupplierCard = ({ supplier, onClose, regulatoryEnabled = false, onOrderPla
             <DialogTitle className="text-foreground">Recommendation: {supplier.name}</DialogTitle>
           </DialogHeader>
           <ul className="space-y-2">
-            {recommendations.map((r, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-accent mt-0.5">✓</span>
-                {r}
+            {recommendations.length > 0 ? recommendations.map((item, index) => (
+              <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <span className="mt-0.5 text-accent">+</span>
+                {item}
               </li>
-            ))}
+            )) : (
+              <li className="text-sm text-muted-foreground">No additional recommendation details available.</li>
+            )}
           </ul>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showRegulatoryWarning} onOpenChange={setShowRegulatoryWarning}>
-        <DialogContent className="glass-card border-border text-center py-8">
-          <p className="text-4xl mb-3">⚠️</p>
-          <p className="text-lg font-semibold text-foreground mb-2">Regulatory Constraint</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            You may be restricted from ordering from this region due to regulatory constraints. Escalating to senior procurement officer.
+        <DialogContent className="glass-card border-border py-8 text-center">
+          <p className="mb-3 text-lg font-semibold text-foreground">Regulatory Constraint</p>
+          <p className="mb-4 text-sm text-muted-foreground">
+            This order would need manual review because the supplier region is flagged by the UI constraint layer.
           </p>
-          <button onClick={handleRegulatoryConfirm} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/80 transition-colors">
-            Acknowledge & Escalate
+          <button onClick={handleRegulatoryConfirm} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80">
+            Acknowledge and Escalate
           </button>
         </DialogContent>
       </Dialog>
 
       <Dialog open={orderResult !== null} onOpenChange={handleOrderModalClose}>
-        <DialogContent className="glass-card border-border text-center py-10">
+        <DialogContent className="glass-card border-border py-10 text-center">
           {orderResult === 'success' ? (
-            <>
-              <p className="text-4xl mb-3">✅</p>
-              <p className="text-lg font-semibold text-foreground">Order placed successfully</p>
-            </>
+            <p className="text-lg font-semibold text-foreground">Order placed successfully</p>
           ) : (
-            <>
-              <p className="text-4xl mb-3">⚠️</p>
-              <p className="text-lg font-semibold text-foreground">Order sent for review</p>
-            </>
+            <p className="text-lg font-semibold text-foreground">Order sent for review</p>
           )}
         </DialogContent>
       </Dialog>

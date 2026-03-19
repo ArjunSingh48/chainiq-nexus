@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { suppliers as initialSuppliers, Supplier, getTop10, applyConstraints, Notification } from '@/data/suppliers';
+import { useCallback, useState } from 'react';
+import { Supplier, getTop10, Notification } from '@/data/suppliers';
 import ChatInterface from '@/components/ChatInterface';
 import GlobeView from '@/components/GlobeView';
 import SupplierPanel from '@/components/SupplierPanel';
@@ -7,91 +7,60 @@ import SupplierCard from '@/components/SupplierCard';
 import AnalysisOverlay from '@/components/AnalysisOverlay';
 import ProqAILogo from '@/components/ProqAILogo';
 import NotificationBell from '@/components/NotificationBell';
-import SettingsPanel, { SettingsState } from '@/components/SettingsPanel';
 import TrackingCard, { Consignment } from '@/components/TrackingCard';
+import { runWorkflow, WorkflowResponse } from '@/lib/workflow';
 
-type Phase = 'chat' | 'globe' | 'constraints';
+type Phase = 'chat' | 'results';
 
 const ZURICH = { lat: 47.3769, lng: 8.5417 };
 
 const ChatPage = () => {
   const [phase, setPhase] = useState<Phase>('chat');
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [workflow, setWorkflow] = useState<WorkflowResponse | null>(null);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [top10, setTop10] = useState<Supplier[]>([]);
-  const [panelLoading, setPanelLoading] = useState(true);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [settings, setSettings] = useState<SettingsState>({
-    conflicts: false,
-    blockages: false,
-    restrictions: false,
-    regulatoryConstraints: false,
-  });
   const [nextNotifId, setNextNotifId] = useState(100);
   const [consignments, setConsignments] = useState<Consignment[]>([]);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
 
-  // Red → grey transition every 3 seconds
-  useEffect(() => {
-    if (phase === 'chat') return;
-    const interval = setInterval(() => {
-      setSuppliers(prev => {
-        const restricted = prev.filter(s => s.accessibility === 'restricted').sort((a, b) => b.rank - a.rank);
-        if (restricted.length === 0) return prev;
-        const target = restricted[0];
-        return prev.map(s => s.id === target.id ? { ...s, accessibility: 'open' as const } : s);
-      });
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [phase]);
-
-  // Settings toggles
-  useEffect(() => {
-    setSuppliers(prev => prev.map(s => {
-      const shouldRestrict =
-        (settings.conflicts && ['BR', 'ZA', 'IN', 'AE'].includes(s.countryCode)) ||
-        (settings.blockages && ['MX'].includes(s.countryCode)) ||
-        (settings.restrictions && s.rank > 20);
-      
-      if (shouldRestrict && s.accessibility === 'open') {
-        return { ...s, accessibility: 'restricted' as const };
-      }
-      return s;
-    }));
-  }, [settings.conflicts, settings.blockages, settings.restrictions]);
-
-  // Populate panel after entering globe phase
-  useEffect(() => {
-    if (phase === 'globe') {
-      const timer = setTimeout(() => {
-        setTop10(getTop10(suppliers));
-        setPanelLoading(false);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [phase]);
-
-  // Update top10 when suppliers change
-  useEffect(() => {
-    if (phase !== 'chat' && !panelLoading) {
-      setTop10(getTop10(suppliers));
-    }
-  }, [suppliers, phase, panelLoading]);
-
-  const handleFirstMessage = useCallback(() => {
-    setPhase('globe');
-  }, []);
-
-  const handleConstraintMessage = useCallback(async () => {
+  const handleSubmit = useCallback(async (message: string) => {
     setShowAnalysis(true);
-    const result = await applyConstraints(suppliers);
-    setSuppliers(result.suppliers);
-    setTop10(result.top10);
-    setShowAnalysis(false);
-    setPhase('constraints');
-  }, [suppliers]);
+    try {
+      const result = await runWorkflow(message, sessionId);
+      setSessionId(result.session_id);
+
+      if (result.status === 'needs_clarification') {
+        setWorkflow(result);
+        setSuppliers([]);
+        setTop10([]);
+        setNotifications([]);
+        setSelectedSupplier(null);
+        setFocusPoint(null);
+        setPhase('chat');
+        return result.follow_up_question ?? result.ui.summary;
+      }
+
+      const workflowSuppliers = result.ui.suppliers;
+
+      setWorkflow(result);
+      setSuppliers(workflowSuppliers);
+      setTop10(getTop10(workflowSuppliers));
+      setNotifications(result.ui.notifications);
+      setSelectedSupplier(workflowSuppliers[0] ?? null);
+      setFocusPoint(workflowSuppliers[0] ? { lat: workflowSuppliers[0].lat, lng: workflowSuppliers[0].lng } : null);
+      setPhase('results');
+
+      const blockingCount = result.engine_output?.escalations.filter((item) => item.blocking).length ?? 0;
+      return `${result.ui.summary} Parsed with ${result.parser_source}. Blocking escalations: ${blockingCount}.`;
+    } finally {
+      setShowAnalysis(false);
+    }
+  }, [sessionId]);
 
   const handleSupplierSelect = useCallback((supplier: Supplier) => {
     setSelectedSupplier(supplier);
@@ -108,8 +77,8 @@ const ChatPage = () => {
         : `PENDING: Order to ${supplier.name} requires review`,
       time: 'Just now',
     };
-    setNextNotifId(prev => prev + 1);
-    setNotifications(prev => [notif, ...prev]);
+    setNextNotifId((prev) => prev + 1);
+    setNotifications((prev) => [notif, ...prev]);
   }, [nextNotifId]);
 
   const handleOrderSuccess = useCallback((supplier: Supplier) => {
@@ -118,14 +87,14 @@ const ChatPage = () => {
       supplierName: supplier.name,
       origin: { lat: supplier.lat, lng: supplier.lng },
       destination: ZURICH,
-      originCity: `${supplier.country}`,
+      originCity: supplier.country,
       originCountry: supplier.countryCode,
       orderId: `${1234 + consignments.length}`,
-      units: 200,
+      units: workflow?.request.quantity ?? 0,
       startTime: Date.now(),
     };
-    setConsignments(prev => [...prev, newConsignment]);
-  }, []);
+    setConsignments((prev) => [...prev, newConsignment]);
+  }, [consignments.length, workflow?.request.quantity]);
 
   const handleArcClick = useCallback((consignment: Consignment) => {
     setSelectedConsignment(consignment);
@@ -133,27 +102,24 @@ const ChatPage = () => {
   }, []);
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative" style={{ background: 'linear-gradient(135deg, #e6f2ff 0%, #cce7ff 100%)' }}>
+    <div className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]">
       {phase !== 'chat' && (
-        <header className="absolute top-0 left-0 right-0 z-40 bg-black border-b border-border h-12 flex items-center justify-between px-4 text-white">
+        <header className="absolute left-0 right-0 top-0 z-40 flex h-12 items-center justify-between border-b border-border bg-black/70 px-4 text-white backdrop-blur">
           <ProqAILogo />
-          <div className="flex items-center gap-1">
-            <NotificationBell notifications={notifications} />
-            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
-          </div>
+          <NotificationBell notifications={notifications} />
         </header>
       )}
 
       <ChatInterface
         minimized={phase !== 'chat'}
-        onFirstMessage={handleFirstMessage}
-        onConstraintMessage={handleConstraintMessage}
+        onSubmit={handleSubmit}
         phase={phase}
+        loading={showAnalysis}
       />
 
       {phase !== 'chat' && (
-        <div className="absolute inset-0 pt-12 pb-[60px] flex">
-          <div className="w-[60%] h-full relative">
+        <div className="absolute inset-0 flex pb-[60px] pt-12">
+          <div className="relative h-full w-[60%]">
             <GlobeView
               suppliers={suppliers}
               top10={top10}
@@ -165,7 +131,6 @@ const ChatPage = () => {
             <SupplierCard
               supplier={selectedSupplier}
               onClose={() => setSelectedSupplier(null)}
-              regulatoryEnabled={settings.regulatoryConstraints}
               onOrderPlaced={addNotification}
               onOrderSuccess={handleOrderSuccess}
             />
@@ -174,8 +139,8 @@ const ChatPage = () => {
               onClose={() => setSelectedConsignment(null)}
             />
           </div>
-          <div className="w-[40%] h-full">
-            <SupplierPanel suppliers={top10} loading={panelLoading} onSelect={handleSupplierSelect} />
+          <div className="h-full w-[40%]">
+            <SupplierPanel suppliers={top10} loading={showAnalysis} onSelect={handleSupplierSelect} workflow={workflow} />
           </div>
         </div>
       )}
