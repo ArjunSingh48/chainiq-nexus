@@ -1,9 +1,32 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProqAILogo from '@/components/ProqAILogo';
 import { ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import { mockRequests, type SupervisorRequest } from '@/data/supervisorMockData';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
+function useCursorTooltip() {
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const show = useCallback((text: string, e: React.MouseEvent) => {
+    setTip({ text, x: e.clientX, y: e.clientY });
+  }, []);
+  const move = useCallback((e: React.MouseEvent) => {
+    setTip((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+  }, []);
+  const hide = useCallback(() => setTip(null), []);
+  return { tip, show, move, hide };
+}
+
+function CursorTooltip({ tip }: { tip: { text: string; x: number; y: number } | null }) {
+  if (!tip) return null;
+  return (
+    <div
+      className="pointer-events-none fixed z-[200] max-w-xs rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0"
+      style={{ left: tip.x + 12, top: tip.y - 8 }}
+    >
+      {tip.text}
+    </div>
+  );
+}
 
 const riskColors = {
   financial: 'hsl(358, 87%, 52%)',
