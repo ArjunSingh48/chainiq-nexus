@@ -183,7 +183,7 @@ export function generateAuditPdf(data: AuditData): void {
   }
 
   if (y > 220) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '5. INTERPRETATION & DECISION', y);
+  y = addSectionHeader(doc, '4. INTERPRETATION & DECISION', y);
   y = addField(doc, 'Selected', data.selectedSupplier?.name ?? 'None', y);
   if (engine?.recommendation) {
     y = addField(doc, 'Status', engine.recommendation.status, y);
