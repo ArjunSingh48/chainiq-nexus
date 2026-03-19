@@ -68,7 +68,7 @@
   }
 
   html {
-    scrollbar-gutter: stable;
+    background: #02060b;
   }
 
   ::-webkit-scrollbar {
