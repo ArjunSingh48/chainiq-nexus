@@ -11,7 +11,7 @@ const flagUrl = (code: string) => `https://flagcdn.com/24x18/${code.toLowerCase(
 
 const SupplierPanel = ({ suppliers, loading, onSelect }: Props) => {
   return (
-    <div className="h-full flex flex-col bg-background/50 border-l border-border">
+    <div className="h-full flex flex-col glass-card border-l border-border">
       <div className="p-4 border-b border-border">
         <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Top 10 Suppliers</h2>
       </div>
@@ -40,7 +40,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect }: Props) => {
               </div>
               <div className="flex gap-4 text-xs text-muted-foreground">
                 <span>ESG: <span className="text-accent font-medium">{s.esgScore}</span></span>
-                <span>Trust: <span className="text-secondary font-medium">{s.trustScore}</span></span>
+                <span>Confidence: <span className="text-secondary font-medium">{s.confidenceScore}</span></span>
               </div>
             </button>
           ))

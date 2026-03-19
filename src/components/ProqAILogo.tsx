@@ -1,4 +1,4 @@
-const ChainIQLogo = ({ className = '' }: { className?: string }) => (
+const ProqAILogo = ({ className = '' }: { className?: string }) => (
   <div className={`flex items-center gap-2 ${className}`}>
     <div className="relative w-8 h-8">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -8,9 +8,9 @@ const ChainIQLogo = ({ className = '' }: { className?: string }) => (
       </svg>
     </div>
     <span className="text-xl font-bold tracking-wider text-foreground">
-      Chain<span className="text-primary">IQ</span>
+      Proq<span className="text-primary">AI</span>
     </span>
   </div>
 );
 
-export default ChainIQLogo;
+export default ProqAILogo;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Globe from 'react-globe.gl';
-import { Supplier, getPointColor, getTop10 } from '@/data/suppliers';
+import { Supplier, getPointColor } from '@/data/suppliers';
 
 interface Props {
   suppliers: Supplier[];
@@ -58,21 +58,21 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint }: Props) => {
   }, [suppliers, onPointClick]);
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-background">
+    <div ref={containerRef} className="w-full h-full rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #e6f2ff, #d4e8ff)' }}>
       {dimensions.width > 0 && (
         <Globe
           ref={globeRef}
           width={dimensions.width}
           height={dimensions.height}
           backgroundColor="rgba(0,0,0,0)"
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
           pointsData={pointData}
           pointLat="lat"
           pointLng="lng"
           pointColor="color"
           pointRadius="size"
           pointAltitude={0.01}
-          pointLabel={(d: any) => `<div style="background:rgba(20,20,30,0.9);padding:6px 10px;border-radius:6px;font-size:12px;color:white;">${d.name}<br/><span style="color:#999">${d.country}</span></div>`}
+          pointLabel={(d: any) => `<div style="background:rgba(255,255,255,0.85);padding:6px 10px;border-radius:6px;font-size:12px;color:#1a1a2e;box-shadow:0 2px 8px rgba(0,0,0,0.1);">${d.name}<br/><span style="color:#666">${d.country}</span></div>`}
           onPointClick={handlePointClick}
           atmosphereColor="hsl(217, 91%, 60%)"
           atmosphereAltitude={0.15}

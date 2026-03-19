@@ -4,14 +4,14 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 95%;
+    --background: 210 60% 95%;
+    --foreground: 220 20% 15%;
 
-    --card: 230 25% 10%;
-    --card-foreground: 0 0% 95%;
+    --card: 210 40% 98%;
+    --card-foreground: 220 20% 15%;
 
-    --popover: 230 25% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 210 40% 98%;
+    --popover-foreground: 220 20% 15%;
 
     --primary: 358 87% 52%;
     --primary-foreground: 0 0% 100%;
@@ -19,8 +19,8 @@
     --secondary: 217 91% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 230 15% 15%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 210 30% 90%;
+    --muted-foreground: 220 10% 40%;
 
     --accent: 160 84% 39%;
     --accent-foreground: 0 0% 100%;
@@ -28,26 +28,26 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 15% 20%;
-    --input: 230 15% 20%;
+    --border: 210 20% 82%;
+    --input: 210 20% 85%;
     --ring: 358 87% 52%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 0 0% 95%;
+    --sidebar-background: 210 50% 96%;
+    --sidebar-foreground: 220 20% 15%;
     --sidebar-primary: 358 87% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 230 15% 15%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 230 15% 20%;
+    --sidebar-accent: 210 30% 90%;
+    --sidebar-accent-foreground: 220 20% 15%;
+    --sidebar-border: 210 20% 82%;
     --sidebar-ring: 358 87% 52%;
 
-    --chainiq-red: 358 87% 52%;
-    --chainiq-blue: 217 91% 60%;
-    --chainiq-green: 160 84% 39%;
-    --chainiq-grey: 220 9% 46%;
-    --glass-bg: 230 25% 10%;
+    --proqai-red: 358 87% 52%;
+    --proqai-blue: 217 91% 60%;
+    --proqai-green: 160 84% 39%;
+    --proqai-grey: 220 9% 46%;
+    --glass-bg: 210 40% 98%;
   }
 }
 
@@ -59,15 +59,18 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #e6f2ff 0%, #cce7ff 100%);
+    min-height: 100vh;
   }
 }
 
 @layer components {
   .glass-card {
-    background: rgba(20, 20, 30, 0.7);
+    background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   }
 
   .cta-impact {
@@ -102,7 +105,7 @@
   }
 
   .cta-impact:hover {
-    box-shadow: 0 0 30px rgba(236, 30, 36, 0.4);
+    box-shadow: 0 0 30px rgba(236, 30, 36, 0.3);
   }
 
   .cta-impact span {
