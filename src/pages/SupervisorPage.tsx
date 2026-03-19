@@ -240,6 +240,7 @@ const SupervisorPage = () => {
           })}
         </section>
       </main>
+      <CursorTooltip tip={tt.tip} />
     </div>
   );
 };
