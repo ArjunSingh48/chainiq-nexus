@@ -41,7 +41,7 @@ const Index = () => {
             AI-powered autonomous sourcing that ensures compliance, optimizes costs, and delivers audit-ready procurement decisions in real time.
           </p>
           <button
-            onClick={() => navigate('/chat')}
+            onClick={() => navigate('/portal')}
             className="cta-impact text-lg"
           >
             <span>Start with ProqAI →</span>
