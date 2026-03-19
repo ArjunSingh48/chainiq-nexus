@@ -260,7 +260,7 @@ export function generateAuditPdf(data: AuditData): void {
   y += 4;
 
   if (y > 240) { doc.addPage(); ensureDarkBg(doc); y = 20; }
-  y = addSectionHeader(doc, '7. ORDER & DELIVERY', y);
+  y = addSectionHeader(doc, '6. ORDER & DELIVERY', y);
   if (data.consignments.length > 0) {
     for (const c of data.consignments) {
       y = addField(doc, 'Supplier', c.supplierName, y);
