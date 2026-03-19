@@ -148,6 +148,21 @@ const ChatPage = () => {
         </div>
       )}
 
+      {phase !== 'chat' && (
+        <AuditButton
+          auditData={{
+            workflow,
+            suppliers,
+            top10,
+            selectedSupplier,
+            notifications,
+            consignments,
+            chatMessages,
+            sessionId,
+          }}
+        />
+      )}
+
       <AnalysisOverlay visible={showAnalysis} />
     </div>
   );
