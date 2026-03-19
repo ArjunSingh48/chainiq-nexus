@@ -1,0 +1,85 @@
+import { useEffect, useRef, useState, useCallback } from 'react';
+import Globe from 'react-globe.gl';
+import { Supplier, getPointColor, getTop10 } from '@/data/suppliers';
+
+interface Props {
+  suppliers: Supplier[];
+  top10: Supplier[];
+  onPointClick: (supplier: Supplier) => void;
+  focusPoint: { lat: number; lng: number } | null;
+}
+
+const GlobeView = ({ suppliers, top10, onPointClick, focusPoint }: Props) => {
+  const globeRef = useRef<any>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  useEffect(() => {
+    if (globeRef.current) {
+      const controls = globeRef.current.controls();
+      if (controls) {
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (focusPoint && globeRef.current) {
+      globeRef.current.pointOfView({ lat: focusPoint.lat, lng: focusPoint.lng, altitude: 1.5 }, 1000);
+    }
+  }, [focusPoint]);
+
+  const top10Ids = top10.map(s => s.id);
+
+  const pointData = suppliers.map(s => ({
+    ...s,
+    color: getPointColor(s, top10Ids),
+    size: top10Ids.includes(s.id) ? 0.6 : 0.4,
+  }));
+
+  const handlePointClick = useCallback((point: any) => {
+    const supplier = suppliers.find(s => s.id === point.id);
+    if (supplier) onPointClick(supplier);
+  }, [suppliers, onPointClick]);
+
+  return (
+    <div ref={containerRef} className="w-full h-full bg-background">
+      {dimensions.width > 0 && (
+        <Globe
+          ref={globeRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          backgroundColor="rgba(0,0,0,0)"
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          pointsData={pointData}
+          pointLat="lat"
+          pointLng="lng"
+          pointColor="color"
+          pointRadius="size"
+          pointAltitude={0.01}
+          pointLabel={(d: any) => `<div style="background:rgba(20,20,30,0.9);padding:6px 10px;border-radius:6px;font-size:12px;color:white;">${d.name}<br/><span style="color:#999">${d.country}</span></div>`}
+          onPointClick={handlePointClick}
+          atmosphereColor="hsl(217, 91%, 60%)"
+          atmosphereAltitude={0.15}
+        />
+      )}
+    </div>
+  );
+};
+
+export default GlobeView;
