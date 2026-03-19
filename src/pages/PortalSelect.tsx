@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import ProqAILogo from '@/components/ProqAILogo';
-import { ShieldCheck, MessageSquare } from 'lucide-react';
+import { ShieldCheck, MessageSquare, ArrowLeft } from 'lucide-react';
 
 const portals = [
   {
