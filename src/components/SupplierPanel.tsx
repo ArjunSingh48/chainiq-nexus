@@ -164,9 +164,6 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                         </span>
                       </div>
                       <p className="mt-2 text-xs leading-5 text-current/90">{entry.detail}</p>
-                      <p className="mt-2 text-[11px] uppercase tracking-widest text-current/70">
-                        Rule {entry.rule}{entry.approver ? ` · ${entry.approver}` : ''}
-                      </p>
                     </div>
                   ))}
                 </div>
