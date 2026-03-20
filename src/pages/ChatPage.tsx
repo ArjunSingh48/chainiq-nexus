@@ -439,9 +439,9 @@ const ChatPage = () => {
           <div className="mb-5 space-y-3">
             {approvalPopupApprovals.map((approval) => (
               <div key={`${approval.rule}-${approval.approver}`} className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-amber-100">{approval.approver}</p>
                 <p className="mt-1 text-sm text-foreground">{approval.reason}</p>
-                <p className="mt-2 text-[11px] uppercase tracking-widest text-amber-200/80">Rule {approval.rule}</p>
+                <p className="text-xs font-semibold tracking-widest text-amber-100">To be approved by: {approval.approver}</p>
+                <p className="mt-2 text-[11px] tracking-widest text-amber-200/80">Rule {approval.rule}</p>
               </div>
             ))}
           </div>

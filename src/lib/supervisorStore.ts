@@ -23,9 +23,3 @@ export function addSupervisorRequest(request: SupervisorRequest) {
   existing.unshift(request);
   saveSupervisorRequests(existing);
 }
-
-export function updateSupervisorRequestStatus(id: string, status: 'approved' | 'rejected') {
-  const existing = loadSupervisorRequests();
-  const updated = existing.map((r) => (r.id === id ? { ...r, status } : r));
-  saveSupervisorRequests(updated);
-}
