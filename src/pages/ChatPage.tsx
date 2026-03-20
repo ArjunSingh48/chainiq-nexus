@@ -230,7 +230,7 @@ const ChatPage = () => {
 
       const blockingCount = result.engine_output?.escalations.filter((item) => item.blocking).length ?? 0;
       return {
-        reply: `${result.ui.summary} Parsed with ${result.parser_source}. Blocking escalations: ${blockingCount}.`,
+        reply: `${result.ui.summary} ${blockingCount} blocking escalation${blockingCount==1?"":"s"}`,
         interpretedAs,
       };
     } finally {
