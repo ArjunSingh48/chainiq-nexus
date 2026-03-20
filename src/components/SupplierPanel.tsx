@@ -251,7 +251,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                     onClarificationDecision?.(selectedClarification, 'approved');
                     setSelectedClarification(null);
                   }}
-                  className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+                  className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/80"
                 >
                   Approve
                 </button>

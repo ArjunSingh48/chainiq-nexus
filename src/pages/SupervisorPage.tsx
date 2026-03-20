@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProqAILogo from '@/components/ProqAILogo';
 import { ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import { mockRequests } from '@/data/supervisorMockData';
 import { DonutChart, BarChart, CursorTooltip, useCursorTooltip } from '@/components/RiskDonutChart';
 import AuditButton from '@/components/AuditButton';
+import { loadSupervisorRequests, saveSupervisorRequests } from '@/lib/supervisorStore';
 
 const statusDot: Record<string, string> = {
   approved: 'bg-accent',
@@ -19,16 +20,43 @@ const statusLabel: Record<string, string> = {
 
 const SupervisorPage = () => {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState(mockRequests);
+  const [requests, setRequests] = useState(() => {
+    const liveRequests = loadSupervisorRequests();
+    const mockIds = new Set(mockRequests.map((r) => r.id));
+    const dedupedLive = liveRequests.filter((r) => !mockIds.has(r.id));
+    return [...dedupedLive, ...mockRequests];
+  });
   const [selectedId, setSelectedId] = useState<string>(requests[0]?.id ?? '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const tt = useCursorTooltip();
 
+  const filteredRequests = filter === 'all' ? requests : requests.filter((r) => r.status === filter);
   const selected = requests.find((r) => r.id === selectedId);
 
-  const handleStatus = (id: string, status: 'approved' | 'rejected') => {
-    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-  };
+  // Sync live requests from localStorage periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const liveRequests = loadSupervisorRequests();
+      setRequests((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id));
+        const newOnes = liveRequests.filter((r) => !existingIds.has(r.id));
+        return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+      });
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStatus = useCallback((id: string, status: 'approved' | 'rejected') => {
+    setRequests((prev) => {
+      const updated = prev.map((r) => (r.id === id ? { ...r, status } : r));
+      // Persist live request status changes
+      const liveRequests = loadSupervisorRequests();
+      const updatedLive = liveRequests.map((r) => (r.id === id ? { ...r, status } : r));
+      saveSupervisorRequests(updatedLive);
+      return updated;
+    });
+  }, []);
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -47,9 +75,9 @@ const SupervisorPage = () => {
         </div>
       </header>
 
-      <main className="flex-1 flex pt-16 h-[calc(100vh-4rem)] min-h-0">
+      <main className="flex-1 flex flex-col md:flex-row pt-16 h-auto md:h-[calc(100vh-4rem)] min-h-0">
         {/* LEFT — Analysis */}
-        <aside className="w-[40%] border-r border-border/50 p-8 overflow-y-auto space-y-8">
+        <aside className="w-full md:w-[40%] border-b md:border-b-0 md:border-r border-border/50 p-4 md:p-8 overflow-y-auto space-y-8">
           {selected ? (
             <>
               <div>
@@ -86,9 +114,24 @@ const SupervisorPage = () => {
         </aside>
 
         {/* RIGHT — Request Inbox */}
-        <section className="w-[60%] p-6 overflow-y-auto space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Request Inbox</h2>
-          {requests.map((req) => {
+        <section className="w-full md:w-[60%] p-4 md:p-6 overflow-y-auto space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Request Inbox</h2>
+            <div className="flex gap-1">
+              {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider transition-colors ${
+                    filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {f} {f !== 'all' && `(${requests.filter((r) => r.status === f).length})`}
+                </button>
+              ))}
+            </div>
+          </div>
+          {filteredRequests.map((req) => {
             const isExpanded = expandedId === req.id;
             const isSelected = selectedId === req.id;
             return (

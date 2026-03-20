@@ -30,7 +30,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="flex flex-col items-center justify-center min-h-screen px-6 pt-16">
+      <main className="flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 pt-16">
         <div className="text-center max-w-4xl mx-auto space-y-10">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase tracking-tight leading-[1.08] text-foreground">
             Committed to Delivering{' '}

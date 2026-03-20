@@ -71,12 +71,17 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
   }, [focusPoint]);
 
   const top10Ids = top10.map(s => s.id);
+  const topSupplierId = top10[0]?.id;
 
   const pointData = suppliers.map(s => ({
     ...s,
     color: getPointColor(s, top10Ids),
-    size: top10Ids.includes(s.id) ? 0.6 : 0.4,
+    size: s.id === topSupplierId ? 0.9 : top10Ids.includes(s.id) ? 0.6 : 0.4,
   }));
+
+  const ringsData = topSupplierId
+    ? suppliers.filter(s => s.id === topSupplierId).map(s => ({ lat: s.lat, lng: s.lng, maxR: 3, propagationSpeed: 2, repeatPeriod: 800 }))
+    : [];
 
   const arcData = consignments.map(c => ({
     ...c,
@@ -111,7 +116,16 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
           pointColor="color"
           pointRadius="size"
           pointAltitude={0.01}
-          pointLabel={(d: any) => `<div style="background:rgba(0,0,0,0.8);padding:6px 10px;border-radius:6px;font-size:12px;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);">${d.name}<br/><span style="color:#aaa">${d.country}</span></div>`}
+          pointLabel={(d: any) => {
+            const isTop1 = d.id === topSupplierId;
+            const isTop10 = top10Ids.includes(d.id);
+            const isRestricted = d.accessibility === 'restricted';
+            const badge = isTop1 ? '<span style="background:#10b981;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">RECOMMENDED</span>'
+              : isRestricted ? '<span style="background:#ef4444;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">RESTRICTED</span>'
+              : isTop10 ? '<span style="background:#3b82f6;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">SHORTLISTED</span>'
+              : '';
+            return `<div style="background:rgba(0,0,0,0.85);padding:8px 12px;border-radius:8px;font-size:12px;color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.4);border:1px solid ${isTop1 ? '#10b981' : isRestricted ? '#ef4444' : 'rgba(255,255,255,0.1)'};">${d.name}${badge}<br/><span style="color:#aaa">${d.country}</span>${d.rank ? `<br/><span style="color:#888;font-size:10px;">Rank #${d.rank}</span>` : ''}</div>`;
+          }}
           onPointClick={handlePointClick}
           atmosphereColor="#3388ff"
           atmosphereAltitude={0.15}
@@ -119,6 +133,11 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
           hexPolygonResolution={3}
           hexPolygonMargin={0.7}
           hexPolygonColor={() => 'rgba(255,255,255,0.1)'}
+          ringsData={ringsData}
+          ringColor={() => (t: number) => `rgba(16, 185, 129, ${1 - t})`}
+          ringMaxRadius="maxR"
+          ringPropagationSpeed="propagationSpeed"
+          ringRepeatPeriod="repeatPeriod"
           arcsData={arcData}
           arcStartLat="startLat"
           arcStartLng="startLng"

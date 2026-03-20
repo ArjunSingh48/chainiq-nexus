@@ -32,12 +32,12 @@ const PortalSelect = () => {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center gap-8 px-6 pt-16">
+      <main className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 px-4 sm:px-6 pt-20 sm:pt-16 pb-8">
         {portals.map((p) => (
           <button
             key={p.title}
             onClick={() => navigate(p.path)}
-            className="glass-card rounded-2xl p-10 w-80 flex flex-col items-center gap-6 text-center transition-all duration-300 hover:scale-[1.03] hover:border-primary/40 hover:shadow-[0_0_40px_rgba(236,30,36,0.1)] group cursor-pointer"
+            className="glass-card rounded-2xl p-8 sm:p-10 w-full sm:w-80 flex flex-col items-center gap-6 text-center transition-all duration-300 hover:scale-[1.03] hover:border-primary/40 hover:shadow-[0_0_40px_rgba(236,30,36,0.1)] group cursor-pointer"
           >
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
               <p.icon className="w-7 h-7 text-primary" />

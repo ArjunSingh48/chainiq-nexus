@@ -80,6 +80,7 @@ export function generateAuditPdf(data: AuditData): void {
 
   ensureDarkBg(doc);
 
+  // Header with branding
   doc.setFillColor(16, 185, 129);
   doc.rect(0, 0, 210, 32, 'F');
   doc.setFontSize(20);
@@ -95,6 +96,32 @@ export function generateAuditPdf(data: AuditData): void {
   }
 
   let y = 42;
+
+  // EXECUTIVE SUMMARY
+  y = addSectionHeader(doc, 'EXECUTIVE SUMMARY', y);
+  doc.setFillColor(25, 30, 45);
+  doc.roundedRect(14, y - 2, 182, 52, 3, 3, 'F');
+
+  const summaryStatus = engine?.recommendation?.status ?? data.workflow?.status ?? 'N/A';
+  const summarySupplier = engine?.recommendation?.recommended_supplier ?? data.top10[0]?.name ?? 'N/A';
+  const summaryReason = engine?.recommendation?.reason ?? engine?.recommendation?.rationale ?? 'No recommendation available';
+  const blockingEscalations = engine?.escalations?.filter((e) => e.blocking).length ?? 0;
+  const totalEscalations = engine?.escalations?.length ?? 0;
+
+  y = addField(doc, 'Decision', summaryStatus.replace(/_/g, ' ').toUpperCase(), y);
+  y = addField(doc, 'Top Supplier', summarySupplier, y);
+  y = addField(doc, 'Suppliers Evaluated', `${data.suppliers.length} total, ${data.top10.length} shortlisted`, y);
+  if (req) {
+    y = addField(doc, 'Request', `${req.category_l2 || 'N/A'} - Qty ${req.quantity ?? 'N/A'} - ${req.budget_amount ? formatCurrency(req.budget_amount, req.currency) : 'N/A'}`, y);
+  }
+  y = addField(doc, 'Escalations', `${totalEscalations} total (${blockingEscalations} blocking)`, y);
+  y = addField(doc, 'Orders Placed', data.consignments.length.toString(), y);
+  y = addWrappedText(doc, `Rationale: ${summaryReason}`, 16, y + 2, 170);
+  y += 6;
+
+  doc.setDrawColor(60, 60, 80);
+  doc.line(14, y, 196, y);
+  y += 6;
 
   y = addSectionHeader(doc, '1. REQUEST OVERVIEW', y);
   if (req) {

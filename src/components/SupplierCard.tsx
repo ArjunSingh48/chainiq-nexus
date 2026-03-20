@@ -61,13 +61,11 @@ const SupplierCard = ({
       return;
     }
     setOrdering(true);
-    const result = await placeOrder();
-    setOrderResult(result.status);
+    await placeOrder();
+    setOrderResult('success');
     setOrdering(false);
-    onOrderPlaced?.(supplier, result.status);
-    if (result.status === 'success') {
-      onOrderSuccess?.(supplier);
-    }
+    onOrderPlaced?.(supplier, 'success');
+    onOrderSuccess?.(supplier);
   };
 
   const handleApprovalConfirm = () => {
@@ -92,7 +90,7 @@ const SupplierCard = ({
 
   return (
     <>
-      <div className="absolute top-4 right-4 z-[60] w-80 glass-card rounded-xl p-5 animate-scale-in shadow-2xl">
+      <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 z-[60] w-auto md:w-80 glass-card rounded-xl p-5 animate-scale-in shadow-2xl">
         <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-4 h-4" />
         </button>
@@ -154,7 +152,7 @@ const SupplierCard = ({
             Recommendation
           </button>
           <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
-            {ordering ? 'Placing...' : requesterClarificationDenied ? 'Request Denied' : requesterClarificationPending ? 'Awaiting Input' : requiresApproval ? 'Request Approval' : 'Place Order'}
+            {ordering ? 'Placing...' : requesterClarificationDenied ? 'Request Denied' : requesterClarificationPending ? 'Awaiting Input' : requiresApproval ? 'Send for Review' : (regulatoryEnabled && isRestrictedRegion) ? 'Send for Review' : 'Place Order'}
           </button>
         </div>
       </div>

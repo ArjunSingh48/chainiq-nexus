@@ -1,17 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, ChevronUp, ChevronDown, Mic, MicOff } from 'lucide-react';
+import { Send, ChevronUp, ChevronDown, Mic, Pause, RotateCcw, ShoppingCart } from 'lucide-react';
 
 export interface Message {
   role: 'ai' | 'user';
   text: string;
-  interpretedAs?: Array<{ label: string; value: string }>;
+  interpretedAs?: Array<{ label: string; value: string; flag?: boolean }>;
   neededFromRequester?: string;
+  isError?: boolean;
+  isClarification?: boolean;
 }
 
 export interface ChatSubmitResult {
   reply: string | string[];
-  interpretedAs?: Array<{ label: string; value: string }>;
+  interpretedAs?: Array<{ label: string; value: string; flag?: boolean }>;
   neededFromRequester?: string;
+  isClarification?: boolean;
 }
 
 interface Props {
@@ -21,22 +24,37 @@ interface Props {
   loading: boolean;
   onMessagesChange?: (messages: { role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]) => void;
   initialMessages?: Message[];
+  onQuickOrder?: () => void;
+  quickOrderLabel?: string;
 }
+
+const PROGRESS_STEPS = [
+  'Thinking...',
+  'Finding details...',
+  'Double-checking info...',
+  'Considering next steps...',
+];
 
 const DEFAULT_MESSAGES: Message[] = [
   { role: 'ai', text: 'Describe what you need to buy. I will analyse it, run the supplier engine, and return the shortlist.' },
 ];
 
-const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, initialMessages }: Props) => {
+const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, initialMessages, onQuickOrder, quickOrderLabel }: Props) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages ?? DEFAULT_MESSAGES);
   const [input, setInput] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 460, height: 560 });
+  const [progressStep, setProgressStep] = useState(0);
+  const [lastFailedMsg, setLastFailedMsg] = useState<string | null>(null);
+  const [voiceLevels, setVoiceLevels] = useState<number[]>([0, 0, 0, 0, 0, 0, 0, 0]);
+  const [activeClarification, setActiveClarification] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resizeStateRef = useRef<{ startX: number; startY: number; startWidth: number; startHeight: number } | null>(null);
+  const voiceDecayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,10 +62,19 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
   }, [messages, onMessagesChange]);
 
   useEffect(() => {
+    if (loading) {
+      setProgressStep(0);
+      progressTimerRef.current = setInterval(() => {
+        setProgressStep((prev) => Math.min(prev + 1, PROGRESS_STEPS.length - 1));
+      }, 1850);
+    } else {
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
     return () => {
-      recognitionRef.current?.abort();
+      if (progressTimerRef.current) clearInterval(progressTimerRef.current);
     };
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     if (!loading) {
@@ -82,10 +109,33 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
     };
   }, []);
 
+  const stopVoiceBars = useCallback(() => {
+    if (voiceDecayRef.current) clearInterval(voiceDecayRef.current);
+    voiceDecayRef.current = null;
+    setVoiceLevels([0, 0, 0, 0, 0, 0, 0, 0]);
+  }, []);
+
+  const startVoiceBars = useCallback(() => {
+    // Gentle idle animation while listening but no speech detected
+    voiceDecayRef.current = setInterval(() => {
+      setVoiceLevels((prev) =>
+        prev.map((v) => Math.max(v * 0.7, 0.1 + Math.random() * 0.12))
+      );
+    }, 120);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+      stopVoiceBars();
+    };
+  }, [stopVoiceBars]);
+
   const toggleListening = useCallback(() => {
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
+      stopVoiceBars();
       return;
     }
 
@@ -105,78 +155,153 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
       setInput((prev) => (prev ? prev + ' ' + transcript : transcript));
     };
 
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => { setIsListening(false); stopVoiceBars(); };
+    recognition.onerror = () => { setIsListening(false); stopVoiceBars(); };
 
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
-  }, [isListening]);
+    startVoiceBars();
+  }, [isListening, startVoiceBars, stopVoiceBars]);
 
   const handleSend = async () => {
     if (loading || !input.trim()) return;
     const msg = input.trim();
+    // If user didn't click a specific question, infer it if there's only one
+    const currentClarifications = messages.filter(m => m.isClarification);
+    const answeredQuestion = activeClarification ?? (currentClarifications.length === 1 ? currentClarifications[0].text : null);
+    setActiveClarification(null);
     setMessages((prev) => [...prev, { role: 'user', text: msg }]);
     setInput('');
 
     try {
       const result = await onSubmit(msg);
+      setLastFailedMsg(null);
       setMessages((prev) => {
-        const next = [...prev];
+        // Convert old clarification messages to regular messages (no longer clickable)
+        const next = prev.map(m => m.isClarification ? { ...m, isClarification: false } : m);
+
+        // Attach interpretedAs to the user message
         for (let index = next.length - 1; index >= 0; index -= 1) {
           if (next[index].role === 'user' && next[index].text === msg && !next[index].interpretedAs) {
             next[index] = { ...next[index], interpretedAs: result.interpretedAs };
             break;
           }
         }
+
         const replies = Array.isArray(result.reply) ? result.reply : [result.reply];
-        for (let i = 0; i < replies.length; i += 1) {
-          next.push({
-            role: 'ai',
-            text: replies[i],
-            neededFromRequester: i === replies.length - 1 ? result.neededFromRequester : undefined,
-          });
+
+        if (result.isClarification) {
+          // The backend returns questions only for still-missing fields — this is authoritative.
+          const newQuestionTexts = new Set(replies);
+
+          // Remove old AI messages whose text duplicates a question being re-asked
+          // (also catches messages prefixed with "I didn't catch that.")
+          const matchesNewQuestion = (text: string) =>
+            newQuestionTexts.has(text) || newQuestionTexts.has(text.replace(/^I didn't catch that\.\s*/, ''));
+          const deduped = next.filter(m =>
+            !(m.role === 'ai' && !m.isClarification && matchesNewQuestion(m.text))
+          );
+          next.length = 0;
+          next.push(...deduped);
+
+          // Add new clickable clarification messages
+          for (const reply of replies) {
+            const didntCatch = answeredQuestion && reply === answeredQuestion;
+            next.push({
+              role: 'ai',
+              text: didntCatch ? `I didn't catch that. ${reply}` : reply,
+              isClarification: true,
+            });
+          }
+        } else {
+          // Normal response (completed or error)
+          for (let i = 0; i < replies.length; i += 1) {
+            next.push({
+              role: 'ai',
+              text: replies[i],
+              neededFromRequester: i === replies.length - 1 ? result.neededFromRequester : undefined,
+            });
+          }
         }
         return next;
       });
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Request failed.';
-      setMessages((prev) => [...prev, { role: 'ai', text: `Workflow failed: ${text}` }]);
+      setLastFailedMsg(msg);
+      setMessages((prev) => [...prev, { role: 'ai', text: `Workflow failed: ${text}`, isError: true } as Message]);
     }
   };
 
-  const renderMessageBubble = (message: Message, index: number, compact = false) => {
+  const handleClarificationClick = (question: string) => {
+    if (loading) return;
+    setActiveClarification(question);
+    setInput('');
+    inputRef.current?.focus();
+  };
+
+  const renderMessageBubble = (message: Message, index: number, compact = false, prevMessage?: Message) => {
     const isUser = message.role === 'user';
-    const showInterpretationPopover = isUser && (!!message.interpretedAs || (loading && index === messages.length - 1));
+    const showInterpretationPopover = isUser && !!message.interpretedAs;
+    const isConsecutiveAi = !isUser && prevMessage && prevMessage.role === 'ai';
+    const showLabel = !isUser && !isConsecutiveAi;
     return (
-      <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'} ${compact ? '' : 'animate-fade-in'}`}>
+      <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'} ${isConsecutiveAi ? '!mt-1' : ''} ${compact ? '' : 'animate-fade-in'}`}>
         <div className={`group relative max-w-[85%] ${isUser ? 'items-end' : ''}`}>
+          {message.isClarification ? (
+            <button
+              onClick={() => handleClarificationClick(message.text)}
+              disabled={loading}
+              className={`chat-mono w-full text-left whitespace-pre-wrap rounded-xl px-4 py-3 text-sm border transition-colors ${
+                activeClarification === message.text
+                  ? 'border-primary bg-primary/10 text-slate-50 shadow-lg shadow-primary/10'
+                  : 'border-slate-700 bg-slate-900/95 text-slate-50 shadow-lg shadow-black/20 hover:border-slate-500 hover:bg-slate-800/95'
+              } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {showLabel && <span className="mb-1 block text-xs font-bold text-emerald-400">ProqAI</span>}
+              {message.text}
+            </button>
+          ) : (
           <div className={`chat-mono whitespace-pre-wrap rounded-xl px-4 py-3 text-sm ${isUser ? 'bg-primary text-primary-foreground' : 'border border-slate-700 bg-slate-900/95 text-slate-50 shadow-lg shadow-black/20'}`}>
-            {!isUser && <span className="mb-1 block text-xs font-bold text-emerald-400">ProqAI</span>}
+            {showLabel && <span className="mb-1 block text-xs font-bold text-emerald-400">ProqAI</span>}
             {message.text}
           </div>
+          )}
           {showInterpretationPopover && (
-            <div className="absolute -top-2 right-0 z-20 hidden max-h-[min(24rem,calc(100vh-6rem))] w-[min(26rem,calc(100vw-3rem))] overflow-y-auto -translate-y-full rounded-xl border border-sky-400/30 bg-slate-950/95 p-3 text-left shadow-2xl group-hover:block">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-300">Interpreted As</p>
-              {message.interpretedAs ? (
-                <div className="mt-2 space-y-2">
-                  {message.interpretedAs.map((item) => (
-                    <div key={item.label} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs leading-5 text-slate-200">
-                      <span className="mr-2 inline-block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.label}</span>
-                      <span className="break-words whitespace-normal">{item.value}</span>
+            <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+              <div className="flex flex-col gap-1.5 rounded-lg border border-white/10 bg-slate-950/95 px-3 py-2.5 shadow-lg backdrop-blur-sm min-w-48">
+                {message.interpretedAs!.map((item) =>
+                  item.flag !== undefined ? (
+                    <div key={item.label} className={`rounded-md px-2 py-1 text-[11px] leading-4 text-center ${item.flag ? 'bg-emerald-500/10 text-slate-500' : 'bg-white/5 text-slate-500'}`}>
+                      {item.label}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-2 rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Status</p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-300">
-                  <span className="h-2 w-2 rounded-full bg-sky-300 animate-pulse" />
-                  <span>Parsing request and building structured interpretation...</span>
-                  </div>
-                </div>
-              )}
+                  ) : (
+                    <div key={item.label} className="flex items-baseline justify-between gap-3 rounded-md bg-white/5 px-2 py-1 text-[11px] leading-4 text-slate-300">
+                      <span className="shrink-0 font-medium text-slate-500">{item.label.replace(/_/g, ' ')}</span>
+                      <span className="text-right break-words">{item.value}</span>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
+          )}
+          {!isUser && message.isError && lastFailedMsg && (
+            <button
+              onClick={handleRetry}
+              className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-200 transition-colors hover:bg-red-500/20"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Retry
+            </button>
+          )}
+          {!isUser && onQuickOrder && phase === 'results' && index === messages.length - 1 && !message.isError && (
+            <button
+              onClick={onQuickOrder}
+              className="mt-2 flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground transition-colors hover:bg-accent/80"
+            >
+              <ShoppingCart className="h-3 w-3" />
+              {quickOrderLabel || 'Order Now'}
+            </button>
           )}
           {!isUser && message.neededFromRequester && (
             <div className="pointer-events-none absolute left-0 top-full z-10 hidden pt-2 group-hover:block">
@@ -190,23 +315,42 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
     );
   };
 
-  const micButton = (size: 'sm' | 'lg') => (
-    <button
-      onClick={toggleListening}
-      className={`relative rounded-${size === 'lg' ? 'xl' : 'lg'} transition-colors ${
-        isListening
-          ? 'bg-destructive text-destructive-foreground'
-          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-      } ${size === 'lg' ? 'p-3' : 'p-2'}`}
-      disabled={loading}
-      type="button"
-    >
-      {isListening ? <MicOff className={size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'} /> : <Mic className={size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'} />}
-      {isListening && (
-        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-destructive animate-pulse" />
-      )}
-    </button>
-  );
+  const micButton = (size: 'sm' | 'lg') => {
+    const sz = size === 'lg' ? 'p-3' : 'p-2';
+    const iconSz = size === 'lg' ? 'w-5 h-5' : 'w-4 h-4';
+    const radius = size === 'lg' ? 'rounded-xl' : 'rounded-lg';
+    return (
+      <button
+        onClick={toggleListening}
+        className={`relative overflow-hidden ${radius} transition-colors ${
+          isListening
+            ? 'bg-destructive text-destructive-foreground'
+            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+        } ${sz}`}
+        disabled={loading}
+        type="button"
+        title={isListening ? 'Stop listening' : 'Click to speak'}
+      >
+        {isListening && (
+          <div className="absolute inset-0 flex items-end justify-center gap-px px-1 pb-1 opacity-40">
+            {voiceLevels.map((level, i) => (
+              <span
+                key={i}
+                className="flex-1 rounded-full bg-white transition-[height] duration-75"
+                style={{ height: `${Math.max(15, level * 100)}%` }}
+              />
+            ))}
+          </div>
+        )}
+        <span className="relative z-10">
+          {isListening ? <Pause className={iconSz} /> : <Mic className={iconSz} />}
+        </span>
+        {isListening && (
+          <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-destructive animate-pulse z-10" />
+        )}
+      </button>
+    );
+  };
 
   const lastMessage = messages[messages.length - 1];
   const startResize = (event: { preventDefault: () => void; clientX: number; clientY: number }) => {
@@ -218,14 +362,46 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
       startHeight: windowSize.height,
     };
   };
+  const handleRetry = async () => {
+    if (!lastFailedMsg || loading) return;
+    const msg = lastFailedMsg;
+    setMessages((prev) => prev.filter((m) => !m.isError));
+    setLastFailedMsg(null);
+    setMessages((prev) => [...prev, { role: 'user', text: msg }]);
+    try {
+      const result = await onSubmit(msg);
+      setMessages((prev) => {
+        const next = [...prev];
+        const replies = Array.isArray(result.reply) ? result.reply : [result.reply];
+        for (let i = 0; i < replies.length; i += 1) {
+          next.push({ role: 'ai', text: replies[i], neededFromRequester: i === replies.length - 1 ? result.neededFromRequester : undefined });
+        }
+        return next;
+      });
+    } catch (error) {
+      const text = error instanceof Error ? error.message : 'Request failed.';
+      setLastFailedMsg(msg);
+      setMessages((prev) => [...prev, { role: 'ai', text: `Workflow failed: ${text}`, isError: true } as Message]);
+    }
+  };
+
   const typingBubble = (
     <div className="flex justify-start animate-fade-in">
       <div className="max-w-[85%] rounded-xl border border-slate-700 bg-slate-900/95 px-4 py-3 text-slate-50 shadow-lg shadow-black/20">
         <span className="mb-2 block text-xs font-bold text-emerald-400">ProqAI</span>
-        <div className="flex w-fit items-center gap-1.5 rounded-full bg-slate-800/90 px-3 py-2">
-          <span className="h-2 w-2 rounded-full bg-slate-300 animate-typing-dot" />
-          <span className="h-2 w-2 rounded-full bg-slate-300 animate-typing-dot [animation-delay:0.2s]" />
-          <span className="h-2 w-2 rounded-full bg-slate-300 animate-typing-dot [animation-delay:0.4s]" />
+        <div className="space-y-2">
+          {PROGRESS_STEPS.map((step, i) => (
+            <div key={step} className={`flex items-center gap-2 text-xs transition-all duration-500 ${i <= progressStep ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+              {i < progressStep ? (
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              ) : i === progressStep ? (
+                <span className="h-2 w-2 rounded-full bg-sky-300 animate-pulse" />
+              ) : (
+                <span className="h-2 w-2 rounded-full bg-slate-600" />
+              )}
+              <span className={i < progressStep ? 'text-emerald-300' : i === progressStep ? 'text-sky-200' : 'text-slate-500'}>{step}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -278,7 +454,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
           title="Resize chat"
         />
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.map((m, i) => renderMessageBubble(m, i, true))}
+          {messages.map((m, i) => renderMessageBubble(m, i, true, messages[i - 1]))}
           {loading && typingBubble}
           <div ref={bottomRef} />
         </div>
@@ -288,8 +464,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder="Type your message..."
-            className="chat-mono flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary"
+            placeholder={activeClarification ? `Answer: ${activeClarification}` : 'Type your message...'}
+            className={`chat-mono flex-1 rounded-lg border bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary ${isListening ? 'border-red-500/50' : 'border-slate-700'}`}
           />
           {micButton('sm')}
           <button onClick={() => void handleSend()} className="p-2 bg-primary rounded-lg hover:bg-primary/80 transition-colors disabled:opacity-50" disabled={loading}>
@@ -306,7 +482,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-2xl mx-auto w-full px-4 flex flex-col min-h-full justify-end">
           <div className="w-full space-y-4 py-8">
-            {messages.map((m, i) => renderMessageBubble(m, i))}
+            {messages.map((m, i) => renderMessageBubble(m, i, false, messages[i - 1]))}
             {loading && typingBubble}
             <div ref={bottomRef} />
           </div>
@@ -319,8 +495,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder={phase === 'chat' ? 'e.g., 500 laptops to Zurich by 2026-04-01 under 200000 EUR' : 'Refine the request or add a new constraint'}
-            className="chat-mono flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary"
+            placeholder={activeClarification ? `Answer: ${activeClarification}` : phase === 'chat' ? 'e.g., 500 laptops to Zurich by 2026-04-01 under 200000 EUR' : 'Refine the request or add a new constraint'}
+            className={`chat-mono flex-1 rounded-xl border bg-slate-900 px-4 py-3 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary ${isListening ? 'border-red-500/50' : 'border-slate-700'}`}
             autoFocus
           />
           {micButton('lg')}

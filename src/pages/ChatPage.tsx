@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Supplier, getTop10, Notification } from '@/data/suppliers';
+import { Supplier, getTop10, Notification, placeOrder } from '@/data/suppliers';
 import ChatInterface from '@/components/ChatInterface';
 import type { ChatSubmitResult, Message } from '@/components/ChatInterface';
 import GlobeView from '@/components/GlobeView';
@@ -13,6 +13,8 @@ import TrackingCard, { Consignment } from '@/components/TrackingCard';
 import AuditButton from '@/components/AuditButton';
 import { runWorkflow, WorkflowResponse } from '@/lib/workflow';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import RequestHistory, { saveHistoryEntry, HistoryEntry } from '@/components/RequestHistory';
+import { addSupervisorRequest } from '@/lib/supervisorStore';
 
 type Phase = 'chat' | 'results';
 type RequesterClarificationItem = { field: string; rule: string; escalate_to: string };
@@ -46,12 +48,18 @@ const formatMissingFields = (workflow: WorkflowResponse) => {
   return workflow.missing_critical_fields.map((item) => fieldLabelMap[item.field] ?? item.field);
 };
 
-const buildClarificationReplies = (workflow: WorkflowResponse) => {
-  const replies: string[] = [];
+const buildClarificationReplies = (workflow: WorkflowResponse): string[] => {
+  const followUp = workflow.follow_up_question ?? workflow.ui.summary;
+  // Split the follow-up into individual questions (separated by double newlines)
+  const questions = followUp
+    .split(/\n{2,}/)
+    .map(q => q.trim())
+    .filter(q => q.length > 0);
+
+  // Handle invalid country as a separate message prepended
   const invalidCountry = workflow.missing_critical_fields.find(
     (item) => item.field === 'country' && item.reason === 'invalid' && item.attempted_value,
   );
-  let followUpMessage = workflow.follow_up_question ?? workflow.ui.summary;
 
   if (invalidCountry?.attempted_value) {
     const countryText = workflow.request.country
@@ -62,21 +70,14 @@ const buildClarificationReplies = (workflow: WorkflowResponse) => {
     const backendCountryMessage =
       `I interpreted the delivery country as ${invalidCountry.attempted_value}, but that country is not supported by the current policy dataset.`;
 
-    followUpMessage = followUpMessage
-      .replace(backendCountryMessage, '')
-      .replace(invalidCountryMessage, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-
-    replies.push(
-      invalidCountryMessage,
+    // Remove country error from the split questions to avoid duplication
+    const filtered = questions.filter(q =>
+      !q.includes(backendCountryMessage) && !q.includes(invalidCountryMessage)
     );
+    return [invalidCountryMessage, ...filtered];
   }
 
-  if (followUpMessage) {
-    replies.push(followUpMessage);
-  }
-  return replies;
+  return questions;
 };
 
 const displayExactValue = (value: unknown) => {
@@ -89,30 +90,25 @@ const displayExactValue = (value: unknown) => {
 const buildInterpretedSummary = (workflow: WorkflowResponse) => {
   const request = workflow.request;
   const entries: Array<[string, unknown]> = [
-    ['category_l1', request.category_l1],
-    ['category_l2', request.category_l2],
+    ['category', [request.category_l1, request.category_l2].filter(Boolean).join(' \u203A ') || null],
     ['country', request.country],
     ['site', request.site],
     ['currency', request.currency],
     ['budget_amount', request.budget_amount],
-    ['quantity', request.quantity],
-    ['unit_of_measure', request.unit_of_measure],
+    ['quantity', request.quantity != null ? `${request.quantity}${request.unit_of_measure ? ' ' + request.unit_of_measure : ''}` : null],
     ['required_by_date', request.required_by_date],
     ['preferred_supplier_mentioned', request.preferred_supplier_mentioned],
     ['incumbent_supplier', request.incumbent_supplier],
     ['delivery_countries', request.delivery_countries],
-    ['data_residency_constraint', request.data_residency_constraint],
-    ['esg_requirement', request.esg_requirement],
   ];
 
   return [
-    ...(workflow.status === 'needs_clarification' && workflow.missing_critical_fields.length > 0
-      ? [{ label: 'Missing Inputs', value: formatMissingFields(workflow).join(', ') }]
-      : []),
     ...entries
-      .map(([label, rawValue]) => ({ label, value: displayExactValue(rawValue) })),
-  ]
-    .filter((item): item is { label: string; value: string } => item.value !== null);
+      .map(([label, rawValue]) => ({ label, value: displayExactValue(rawValue) }))
+      .filter((item): item is { label: string; value: string } => item.value !== null),
+    ...(request.category_l1 === 'IT' ? [{ label: request.data_residency_constraint ? 'data residency constrained' : 'data residency unconstrained', value: '', flag: request.data_residency_constraint }] : []),
+    { label: request.esg_requirement ? 'ESG required' : 'ESG not required', value: '', flag: request.esg_requirement },
+  ] as Array<{ label: string; value: string; flag?: boolean }>;
 };
 
 const CHAT_STATE_KEY = 'chatPageState';
@@ -168,10 +164,20 @@ const ChatPage = () => {
         setSelectedSupplier(null);
         setFocusPoint(null);
         setPhase('chat');
+        saveHistoryEntry({
+          id: result.session_id,
+          timestamp: Date.now(),
+          requestText: message,
+          category: result.request.category_l2 || result.request.category_l1 || '',
+          status: 'needs_clarification',
+          supplierCount: 0,
+          topSupplier: null,
+        });
         return {
           reply: buildClarificationReplies(result),
           interpretedAs,
           neededFromRequester: missingLabels.length > 0 ? missingLabels.join(', ') : undefined,
+          isClarification: true,
         };
       }
 
@@ -190,11 +196,37 @@ const ChatPage = () => {
       if (approvalDetails.length > 0) {
         setPendingNotifications(result.ui.notifications);
         setApprovalPopupApprovals(approvalDetails);
+        addSupervisorRequest({
+          id: result.session_id,
+          title: `${result.request.category_l2 || 'Request'} - Qty ${result.request.quantity ?? 'n/a'}`,
+          subtitle: `AI suggested ${workflowSuppliers[0]?.name ?? 'N/A'}`,
+          supplier: workflowSuppliers[0]?.name ?? 'N/A',
+          explanationPoints: approvalDetails.map((a) => `${a.approver}: ${a.reason} (${a.rule})`),
+          risks: {
+            financial: workflowSuppliers[0]?.riskScore ?? 20,
+            operational: 15,
+            esg: 100 - (workflowSuppliers[0]?.esgScore ?? 50),
+            geopolitical: workflowSuppliers[0]?.accessibility === 'restricted' ? 60 : 10,
+          },
+          costValue: result.request.budget_amount ? Math.min(Math.round((result.request.budget_amount / 500000) * 100), 100) : 50,
+          benefitValue: workflowSuppliers[0]?.qualityScore ?? 70,
+          status: 'pending',
+        });
       } else {
         setNotifications(result.ui.notifications);
       }
       setFocusPoint(workflowSuppliers[0] ? { lat: workflowSuppliers[0].lat, lng: workflowSuppliers[0].lng } : null);
       setPhase('results');
+
+      saveHistoryEntry({
+        id: result.session_id,
+        timestamp: Date.now(),
+        requestText: message,
+        category: result.request.category_l2 || result.request.category_l1 || '',
+        status: 'completed',
+        supplierCount: workflowSuppliers.length,
+        topSupplier: workflowSuppliers[0]?.name ?? null,
+      });
 
       const blockingCount = result.engine_output?.escalations.filter((item) => item.blocking).length ?? 0;
       return {
@@ -289,15 +321,35 @@ const ChatPage = () => {
   const requesterClarificationPending = unresolvedClarifications.length > 0;
   const requesterClarificationDenied = deniedClarifications.length > 0;
 
+  const requiresApproval = (workflow?.engine_output?.escalations ?? []).some(e => !e.blocking && e.escalate_to && e.escalate_to !== 'Requester Clarification');
+
+  const handleQuickOrder = useCallback(async () => {
+    const supplier = top10[0];
+    if (!supplier || supplier.accessibility === 'restricted') return;
+    if (requesterClarificationDenied || requesterClarificationPending || requiresApproval) {
+      setSelectedSupplier(supplier);
+      setFocusPoint({ lat: supplier.lat, lng: supplier.lng });
+      return;
+    }
+    await placeOrder();
+    addNotification(supplier, 'success');
+    handleOrderSuccess(supplier);
+  }, [top10, requesterClarificationDenied, requesterClarificationPending, requiresApproval, addNotification, handleOrderSuccess]);
+
   return (
     <div
       className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]"
       style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" }}
     >
       {phase === 'chat' && (
-        <button onClick={() => navigate('/portal')} className="absolute left-4 top-4 z-50 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
+        <>
+          <button onClick={() => navigate('/portal')} className="absolute left-4 top-4 z-50 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <RequestHistory onSelect={(_entry: HistoryEntry) => {
+            // Pre-fill the chat with the previous request text — user can re-submit
+          }} />
+        </>
       )}
 
       {phase !== 'chat' && (
@@ -319,11 +371,13 @@ const ChatPage = () => {
         loading={showAnalysis}
         onMessagesChange={setChatMessages}
         initialMessages={restored?.chatMessages ? (restored.chatMessages as Message[]) : undefined}
+        onQuickOrder={phase === 'results' && top10[0] ? handleQuickOrder : undefined}
+        quickOrderLabel={top10[0] ? `Order from ${top10[0].name}` : undefined}
       />
 
       {phase !== 'chat' && (
-        <div className="absolute inset-0 flex min-h-0 pt-12">
-          <div className="relative h-full min-h-0 w-[55%]">
+        <div className="absolute inset-0 flex flex-col md:flex-row min-h-0 pt-12">
+          <div className="relative h-[40vh] md:h-full min-h-0 w-full md:w-[55%]">
             <GlobeView
               suppliers={suppliers}
               top10={top10}
@@ -339,14 +393,14 @@ const ChatPage = () => {
               onOrderSuccess={handleOrderSuccess}
               requesterClarificationPending={requesterClarificationPending}
               requesterClarificationDenied={requesterClarificationDenied}
-              requiresApproval={(workflow?.engine_output?.escalations ?? []).some(e => !e.blocking && e.escalate_to && e.escalate_to !== 'Requester Clarification')}
+              requiresApproval={requiresApproval}
             />
             <TrackingCard
               consignment={selectedConsignment}
               onClose={() => setSelectedConsignment(null)}
             />
           </div>
-          <div className="h-full min-h-0 w-[45%]">
+          <div className="h-[60vh] md:h-full min-h-0 w-full md:w-[45%]">
             <SupplierPanel
               suppliers={top10}
               loading={showAnalysis}
