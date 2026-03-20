@@ -84,6 +84,7 @@ const ShortlistCard = ({
 
   const activeValue = hoverMetric ? metricMap[hoverMetric] : null;
   const activeWidth = activeValue == null ? 0 : Math.max(8, Math.min(100, activeValue));
+  const showPricingMessage = !hoverMetric && !!supplier.pricingMessage;
 
   return (
     <button
@@ -120,7 +121,7 @@ const ShortlistCard = ({
           </div>
         )}
       </div>
-      <div className="mt-2 min-h-6 text-xs text-slate-300">
+      <div className="mt-2 text-xs text-slate-300">
         {hoverMetric ? (
           <div className="flex items-center gap-3">
             <span className="w-12 shrink-0 font-medium text-slate-100">
@@ -134,9 +135,14 @@ const ShortlistCard = ({
             </div>
           </div>
         ) : (
-          <>
-            Unit price: <span className="font-medium text-slate-100">{formatMoney(supplier.unitPrice, currency)}</span>
-          </>
+          <div className="space-y-1">
+            <div>
+              Unit price: <span className="font-medium text-slate-100">{formatMoney(supplier.unitPrice, currency)}</span>
+            </div>
+            {showPricingMessage && (
+              <p className="leading-5 text-amber-200/90">{supplier.pricingMessage}</p>
+            )}
+          </div>
         )}
       </div>
     </button>

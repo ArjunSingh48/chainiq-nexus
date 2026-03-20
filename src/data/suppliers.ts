@@ -12,6 +12,7 @@ export interface Supplier {
   riskScore: number | null;
   unitPrice: number | null;
   totalPrice?: number | null;
+  pricingMessage?: string | null;
   preferred?: boolean;
   incumbent?: boolean;
   policyCompliant?: boolean;

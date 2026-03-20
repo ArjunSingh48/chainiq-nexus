@@ -143,6 +143,11 @@ const SupplierCard = ({
             Policy warning: this supplier did not pass all checks.
           </div>
         )}
+        {supplier.pricingMessage && (
+          <div className="mb-3 rounded-lg border border-slate-400/20 bg-slate-500/10 p-2 text-center text-xs font-medium text-slate-200">
+            {supplier.pricingMessage}
+          </div>
+        )}
         {recommendationSignals.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
             {recommendationSignals.map((signal) => {
