@@ -192,9 +192,9 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
               className="group w-full rounded-lg border border-white/10 bg-slate-900/92 p-3 text-left [contain:paint] transition-colors duration-150 hover:border-slate-500 hover:bg-slate-900/98"
             >
               <div className="mb-1 flex items-center gap-2">
-                <span className="text-xs font-bold text-primary">#{i + 1}</span>
+                <span className="text-xs font-bold">#{i + 1}</span>
                 <img src={flagUrl(s.countryCode)} alt={s.country} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
-                <span className="text-sm font-semibold text-slate-50 group-hover:text-primary">{s.name}</span>
+                <span className="text-sm font-semibold text-slate-50">{s.name}</span>
                 {s.policyCompliant === false && (
                   <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
                 )}
