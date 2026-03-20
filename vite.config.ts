@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    allowedHosts: ["stud1obook.taile853b.ts.net"],
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8000",

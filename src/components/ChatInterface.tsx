@@ -303,8 +303,8 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
   // Full screen chat
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[radial-gradient(circle_at_top,#16304c_0%,#08111d_48%,#02060b_100%)]">
-      <div className="flex-1 flex flex-col items-center justify-center max-w-2xl mx-auto w-full px-4">
-        <div className="w-full space-y-4 mb-8">
+      <div className="flex-1 flex flex-col items-center max-w-2xl mx-auto w-full px-4 overflow-y-auto">
+        <div className="w-full space-y-4 mb-8 mt-auto">
           {messages.map((m, i) => renderMessageBubble(m, i))}
           {loading && typingBubble}
           <div ref={bottomRef} />
