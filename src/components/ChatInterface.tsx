@@ -460,6 +460,13 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
           onMouseDown={startResize}
           title="Resize chat"
         />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex flex-col gap-3 px-4 py-4">
+            {messages.map((m, i) => renderMessageBubble(m, i, true, messages[i - 1]))}
+            {loading && typingBubble}
+            <div ref={bottomRef} />
+          </div>
+        </div>
         <div className="flex gap-2 border-t border-white/10 p-3">
           <input
             ref={inputRef}

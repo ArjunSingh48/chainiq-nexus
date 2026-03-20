@@ -47,8 +47,105 @@ const traceLabelMap: Record<PolicyTraceEntry['status'], string> = {
   warning: 'Warning',
 };
 
+type HoverMetric = 'risk' | 'esg' | 'quality' | null;
+
+const scoreBadgeTone: Record<Exclude<HoverMetric, null>, string> = {
+  risk: 'border-red-400/30 bg-red-500/10 text-red-200',
+  esg: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200',
+  quality: 'border-sky-400/30 bg-sky-500/10 text-sky-200',
+};
+
+const scoreBarTone: Record<Exclude<HoverMetric, null>, string> = {
+  risk: 'bg-red-400',
+  esg: 'bg-emerald-400',
+  quality: 'bg-sky-400',
+};
+
+const formatScore = (value: number | null | undefined) => (value == null ? 'n/a' : `${Math.round(value)}`);
+
+const ShortlistCard = ({
+  supplier,
+  index,
+  currency,
+  hoverMetric,
+  onSelect,
+}: {
+  supplier: Supplier;
+  index: number;
+  currency: string;
+  hoverMetric: HoverMetric;
+  onSelect: (supplier: Supplier) => void;
+}) => {
+  const metricMap = {
+    risk: supplier.riskScore,
+    esg: supplier.esgScore,
+    quality: supplier.qualityScore,
+  } satisfies Record<Exclude<HoverMetric, null>, number | null>;
+
+  const activeValue = hoverMetric ? metricMap[hoverMetric] : null;
+  const activeWidth = activeValue == null ? 0 : Math.max(8, Math.min(100, activeValue));
+
+  return (
+    <button
+      onClick={() => onSelect(supplier)}
+      className="group w-full rounded-lg border border-white/10 bg-slate-900/92 p-3 text-left [contain:paint] transition-colors duration-150 hover:border-slate-500 hover:bg-slate-900/98"
+    >
+      <div className="mb-1 flex items-center gap-2">
+        <span className="text-xs font-bold">#{index + 1}</span>
+        <img src={flagUrl(supplier.countryCode)} alt={supplier.country} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
+        <span className="text-sm font-semibold text-slate-50">{supplier.name}</span>
+        {supplier.policyCompliant === false && (
+          <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
+        )}
+        {(supplier.preferred || supplier.confidencePct != null) && (
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            {supplier.preferred && (
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
+                <Star className="h-3 w-3 fill-current" />
+              </span>
+            )}
+            {supplier.confidencePct != null && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
+                  supplier.confidencePct >= 80
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : supplier.confidencePct >= 50
+                      ? 'bg-amber-500/20 text-amber-300'
+                      : 'bg-red-500/20 text-red-300'
+                }`}
+              >
+                {supplier.confidencePct.toFixed(1)}%
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="mt-2 min-h-6 text-xs text-slate-300">
+        {hoverMetric ? (
+          <div className="flex items-center gap-3">
+            <span className="w-12 shrink-0 font-medium text-slate-100">
+              {formatScore(activeValue)}
+            </span>
+            <div className="h-2 flex-1 rounded-full bg-white/10">
+              <div
+                className={`h-full rounded-full transition-[width] duration-150 ${scoreBarTone[hoverMetric]}`}
+                style={{ width: `${activeWidth}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            Unit price: <span className="font-medium text-slate-100">{formatMoney(supplier.unitPrice, currency)}</span>
+          </>
+        )}
+      </div>
+    </button>
+  );
+};
+
 const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDecisions = {}, onClarificationDecision }: Props) => {
   const [selectedClarification, setSelectedClarification] = useState<ClarificationItem | null>(null);
+  const [hoverMetric, setHoverMetric] = useState<HoverMetric>(null);
   const recommendation = workflow?.engine_output?.recommendation;
   const validation = workflow?.engine_output?.validation;
   const policyTrace = workflow?.engine_output?.policy_trace ?? [];
@@ -191,7 +288,25 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
             </div>
           )}
 
-          <h3 className="mt-3 text-xs font-bold tracking-[0.18em] text-slate-300">SHORTLIST</h3>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <h3 className="text-xs font-bold tracking-[0.18em] text-slate-300">SHORTLIST</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              {(['risk', 'esg', 'quality'] as const).map((metric) => (
+                <span
+                  key={metric}
+                  onMouseEnter={() => setHoverMetric(metric)}
+                  onMouseLeave={() => setHoverMetric((current) => (current === metric ? null : current))}
+                  className={`cursor-default rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${
+                    hoverMetric === metric
+                      ? scoreBadgeTone[metric]
+                      : 'border-white/10 bg-white/5 text-slate-300'
+                  }`}
+                >
+                  {metric}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2 p-3">
@@ -207,45 +322,14 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
             ))
           ) : (
             suppliers.map((s, i) => (
-              <button
+              <ShortlistCard
                 key={s.id}
-                onClick={() => onSelect(s)}
-                className="group w-full rounded-lg border border-white/10 bg-slate-900/92 p-3 text-left [contain:paint] transition-colors duration-150 hover:border-slate-500 hover:bg-slate-900/98"
-              >
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs font-bold">#{i + 1}</span>
-                  <img src={flagUrl(s.countryCode)} alt={s.country} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
-                  <span className="text-sm font-semibold text-slate-50">{s.name}</span>
-                  {s.policyCompliant === false && (
-                    <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
-                  )}
-                  {(s.preferred || s.confidencePct != null) && (
-                    <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                      {s.preferred && (
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
-                          <Star className="h-3 w-3 fill-current" />
-                        </span>
-                      )}
-                      {s.confidencePct != null && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
-                            s.confidencePct >= 80
-                              ? 'bg-emerald-500/20 text-emerald-300'
-                              : s.confidencePct >= 50
-                                ? 'bg-amber-500/20 text-amber-300'
-                                : 'bg-red-500/20 text-red-300'
-                          }`}
-                        >
-                          {s.confidencePct.toFixed(1)}%
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-2 text-xs text-slate-300">
-                  Unit price: <span className="font-medium text-slate-100">{formatMoney(s.unitPrice, workflow?.request.currency ?? '')}</span>
-                </div>
-              </button>
+                supplier={s}
+                index={i}
+                currency={workflow?.request.currency ?? ''}
+                hoverMetric={hoverMetric}
+                onSelect={onSelect}
+              />
             ))
           )}
         </div>
