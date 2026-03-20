@@ -134,13 +134,13 @@ const AuditDashboardUser = () => {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-black/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={handleBack} className="text-muted-foreground hover:text-foreground transition-colors duration-200">
+            <button onClick={handleBack} title="Back to chat" className="text-muted-foreground hover:text-foreground transition-colors duration-200">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <ProqAILogo />
             <span className="text-xs tracking-wider text-muted-foreground ml-1">Your Procurement Insights</span>
           </div>
-          <button onClick={handleDownload} className="flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-200 hover:bg-muted/50">
+          <button onClick={handleDownload} title="Download audit report as PDF" className="flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-200 hover:bg-muted/50">
             <FileText className="w-4 h-4 text-accent" />
             Download PDF
           </button>
@@ -197,14 +197,14 @@ const AuditDashboardUser = () => {
               <div key={s.name} className="glass-card rounded-xl p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-[0_0_20px_rgba(0,0,0,0.2)]">
                 <span className="text-xs font-bold text-muted-foreground w-7 text-center">#{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{s.name}</p>
+                  <p className="text-sm font-medium text-foreground" title={s.name}>{s.name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{s.explanation}</p>
                 </div>
-                <div className="w-36 flex items-center gap-2">
-                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${s.confidence}%` }} />
+                <div className="w-36 flex items-center gap-2" title={`Confidence score for ${s.name}: ${s.confidence}%`}>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden" title={`Confidence bar: ${s.confidence}%`}>
+                    <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${s.confidence}%` }} title={`Confidence score: ${s.confidence}%`} />
                   </div>
-                  <span className="text-xs font-bold text-accent tabular-nums">{s.confidence}%</span>
+                  <span className="text-xs font-bold text-accent tabular-nums" title={`Confidence score: ${s.confidence}%`}>{s.confidence}%</span>
                 </div>
               </div>
             ))}
@@ -235,7 +235,7 @@ const AuditDashboardUser = () => {
                   <div key={i} className={`rounded-xl border p-4 ${tone}`}>
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium text-foreground">{entry.title}</p>
-                      <span className="shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold">
+                      <span className="shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold" title={`Policy status: ${label}`}>
                         {label}
                       </span>
                     </div>
@@ -263,7 +263,7 @@ const AuditDashboardUser = () => {
                 <div key={i} className={`rounded-xl border p-4 ${esc.blocking ? 'border-red-400/30 bg-red-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}>
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-medium text-foreground">{esc.trigger}</p>
-                    <span className={`shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold ${esc.blocking ? 'text-red-200' : 'text-amber-200'}`}>
+                    <span className={`shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold ${esc.blocking ? 'text-red-200' : 'text-amber-200'}`} title={esc.blocking ? 'Blocking escalation' : 'Non-blocking escalation'}>
                       {esc.blocking ? 'Blocking' : 'Non-blocking'}
                     </span>
                   </div>
@@ -320,23 +320,23 @@ const AuditDashboardUser = () => {
           <div className="grid grid-cols-2 gap-5 text-sm">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Status</p>
-              <p className="text-foreground font-medium">{d.tracking.status}</p>
+              <p className="text-foreground font-medium" title={`Tracking status: ${d.tracking.status}`}>{d.tracking.status}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">ETA</p>
-              <p className="text-foreground font-medium">{d.tracking.eta}</p>
+              <p className="text-foreground font-medium" title={`Estimated arrival: ${d.tracking.eta}`}>{d.tracking.eta}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Origin</p>
-              <p className="text-foreground font-medium flex items-center gap-1"><MapPin className="w-3 h-3" />{d.tracking.origin}</p>
+              <p className="text-foreground font-medium flex items-center gap-1" title={`Origin: ${d.tracking.origin}`}><MapPin className="w-3 h-3" />{d.tracking.origin}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Destination</p>
-              <p className="text-foreground font-medium flex items-center gap-1"><MapPin className="w-3 h-3" />{d.tracking.destination}</p>
+              <p className="text-foreground font-medium flex items-center gap-1" title={`Destination: ${d.tracking.destination}`}><MapPin className="w-3 h-3" />{d.tracking.destination}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Units</p>
-              <p className="text-foreground font-medium">{d.tracking.units}</p>
+              <p className="text-foreground font-medium" title={`Units in order: ${d.tracking.units}`}>{d.tracking.units}</p>
             </div>
           </div>
         </section>

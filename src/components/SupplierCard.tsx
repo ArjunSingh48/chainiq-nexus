@@ -101,50 +101,56 @@ const SupplierCard = ({
     { label: 'Quality', value: supplier.qualityScore, valueClass: 'text-secondary' },
     { label: 'Risk', value: supplier.riskScore, valueClass: 'text-destructive' },
   ];
+  const statusTitle = `Supplier status: ${supplier.accessibility}`;
+  const policyWarningTitle = supplier.policyCompliant === false
+    ? 'Policy warning: this supplier did not pass all checks'
+    : undefined;
+  const supplierLocationTitle = `Supplier country: ${supplier.country}`;
+  const pricingMessageTitle = supplier.pricingMessage ?? undefined;
 
   return (
     <>
       <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 z-[60] w-auto md:w-80 glass-card rounded-xl p-5 animate-scale-in shadow-2xl">
-        <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={onClose} title="Close supplier details" className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-4 h-4" />
         </button>
         <div className="mb-1 flex items-center gap-2 pr-6">
-          <h3 className="text-lg font-bold text-foreground">{supplier.name}</h3>
+          <h3 className="text-lg font-bold text-foreground" title={supplier.name}>{supplier.name}</h3>
           {supplier.policyCompliant === false && (
-            <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
+            <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" title={policyWarningTitle} />
           )}
         </div>
-        <p className="mb-3 text-sm text-muted-foreground">{supplier.country}</p>
+        <p className="mb-3 text-sm text-muted-foreground" title={supplierLocationTitle}>{supplier.country}</p>
         <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Status</p>
-            <p className={`font-bold capitalize ${statusColor}`}>{supplier.accessibility}</p>
+            <p className={`font-bold capitalize ${statusColor}`} title={statusTitle}>{supplier.accessibility}</p>
           </div>
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Order value</p>
-            <p className="font-bold text-foreground" title={orderValueTitle}>{valueLabel}</p>
+            <p className="font-bold text-foreground" title={orderValueTitle ?? `Order value: ${valueLabel}`}>{valueLabel}</p>
           </div>
         </div>
         <div className="mb-4 grid grid-cols-3 gap-2 text-sm">
           {metricCards.map((metric) => (
             <div key={metric.label} className="glass-card rounded-md p-2 text-center">
               <p className="text-xs text-muted-foreground">{metric.label}</p>
-              <p className={`font-bold ${metric.valueClass}`}>{metric.value ?? 'n/a'}</p>
+              <p className={`font-bold ${metric.valueClass}`} title={`${metric.label} score: ${metric.value ?? 'n/a'}`}>{metric.value ?? 'n/a'}</p>
             </div>
           ))}
         </div>
         {supplier.accessibility === 'restricted' && (
-          <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/15 p-2 text-center text-xs font-medium text-destructive">
+          <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/15 p-2 text-center text-xs font-medium text-destructive" title="Restricted supplier: excluded or not currently actionable">
             Supplier was excluded or is not currently actionable.
           </div>
         )}
         {supplier.policyCompliant === false && (
-          <div className="mb-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-center text-xs font-medium text-amber-100">
+          <div className="mb-3 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-center text-xs font-medium text-amber-100" title={policyWarningTitle}>
             Policy warning: this supplier did not pass all checks.
           </div>
         )}
         {supplier.pricingMessage && (
-          <div className="mb-3 rounded-lg border border-slate-400/20 bg-slate-500/10 p-2 text-center text-xs font-medium text-slate-200">
+          <div className="mb-3 rounded-lg border border-slate-400/20 bg-slate-500/10 p-2 text-center text-xs font-medium text-slate-200" title={pricingMessageTitle}>
             {supplier.pricingMessage}
           </div>
         )}
@@ -155,6 +161,15 @@ const SupplierCard = ({
               return (
                 <div
                   key={signal.label}
+                  title={
+                    signal.label === 'Preferred'
+                      ? 'Preferred supplier'
+                      : signal.label === 'Incumbent'
+                        ? 'Incumbent supplier'
+                        : signal.label.includes('standard')
+                          ? `Standard lead time: ${signal.label}`
+                          : `Expedited lead time: ${signal.label}`
+                  }
                   className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${signal.tone}`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -164,7 +179,7 @@ const SupplierCard = ({
             })}
           </div>
         )}
-        <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="w-full whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
+        <button onClick={handleOrder} title={requiresApproval || (regulatoryEnabled && isRestrictedRegion) ? 'Submit this supplier for manual review' : 'Place order with this supplier'} disabled={ordering || supplier.accessibility === 'restricted'} className="w-full whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
             {ordering ? 'Placing...' : requesterClarificationDenied ? 'Request Denied' : requesterClarificationPending ? 'Awaiting Input' : requiresApproval ? 'Send for Review' : (regulatoryEnabled && isRestrictedRegion) ? 'Send for Review' : 'Place Order'}
         </button>
       </div>

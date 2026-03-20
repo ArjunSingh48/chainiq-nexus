@@ -44,6 +44,39 @@ const countryDisplayName = (countryCode: string) => {
 
 const formatCountryDisplay = (countryCode: string) => `${countryDisplayName(countryCode)} (${countryCode})`;
 
+const SAMPLE_CATEGORIES = [
+  'laptops',
+  'office chairs',
+  'cloud hosting',
+  'cybersecurity advisory',
+  'digital marketing services',
+  'standing desks',
+];
+
+const SAMPLE_COUNTRIES = [
+  { city: 'Zurich', country: 'Switzerland' },
+  { city: 'Berlin', country: 'Germany' },
+  { city: 'Dublin', country: 'Ireland' },
+  { city: 'Johannesburg', country: 'South Africa' },
+  { city: 'Singapore', country: 'Singapore' },
+  { city: 'Toronto', country: 'Canada' },
+];
+
+const SAMPLE_BUDGETS = [18000, 45000, 120000, 275000, 640000];
+const SAMPLE_QUANTITIES = [25, 80, 150, 300, 500];
+
+const randomItem = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)];
+
+const buildChatPlaceholder = () => {
+  const category = randomItem(SAMPLE_CATEGORIES);
+  const destination = randomItem(SAMPLE_COUNTRIES);
+  const quantity = randomItem(SAMPLE_QUANTITIES);
+  const budget = randomItem(SAMPLE_BUDGETS);
+  const month = String(Math.floor(Math.random() * 9) + 4).padStart(2, '0');
+  const day = String(Math.floor(Math.random() * 20) + 1).padStart(2, '0');
+  return `e.g., ${quantity} ${category} to ${destination.city}, ${destination.country} by 2026-${month}-${day} under ${budget} EUR`;
+};
+
 const formatMissingFields = (workflow: WorkflowResponse) => {
   return workflow.missing_critical_fields.map((item) => fieldLabelMap[item.field] ?? item.field);
 };
@@ -146,6 +179,7 @@ const ChatPage = () => {
   const [pendingNotifications, setPendingNotifications] = useState<Notification[] | null>(null);
   const [approvalPopupApprovals, setApprovalPopupApprovals] = useState<Array<{ approver: string; reason: string; rule: string }>>([]);
   const [clarificationDecisions, setClarificationDecisions] = useState<Record<string, RequesterClarificationDecision>>((restored?.clarificationDecisions as Record<string, RequesterClarificationDecision>) ?? {});
+  const [chatPlaceholder] = useState(() => buildChatPlaceholder());
 
   const handleSubmit = useCallback(async (message: string, answeringField?: string | null): Promise<ChatSubmitResult> => {
     setShowAnalysis(true);
@@ -376,6 +410,7 @@ const ChatPage = () => {
         onSubmit={handleSubmit}
         phase={phase}
         loading={showAnalysis}
+        chatPlaceholder={chatPlaceholder}
         onMessagesChange={setChatMessages}
         initialMessages={restored?.chatMessages ? (restored.chatMessages as Message[]) : undefined}
         onQuickOrder={phase === 'results' && top10[0] ? handleQuickOrder : undefined}

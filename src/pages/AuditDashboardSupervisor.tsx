@@ -41,13 +41,13 @@ const AuditDashboardSupervisor = () => {
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-black/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/supervisor')} className="text-muted-foreground hover:text-foreground transition-colors duration-200">
+            <button onClick={() => navigate('/supervisor')} title="Back to supervisor dashboard" className="text-muted-foreground hover:text-foreground transition-colors duration-200">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <ProqAILogo />
             <span className="ml-1 text-xs text-muted-foreground">Weekly procurement overview</span>
           </div>
-          <button onClick={handleDownload} className="flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-200 hover:bg-muted/50">
+          <button onClick={handleDownload} title="Download weekly procurement report" className="flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-200 hover:bg-muted/50">
             <FileText className="w-4 h-4 text-accent" />
             Download Weekly Report
           </button>
@@ -58,7 +58,7 @@ const AuditDashboardSupervisor = () => {
         {/* Summary Metrics */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {metrics.map((m) => (
-            <div key={m.label} className="glass-card rounded-2xl p-6 flex flex-col items-center gap-3 text-center transition-all duration-200 hover:shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+            <div key={m.label} title={`${m.label}: ${m.value}`} className="glass-card rounded-2xl p-6 flex flex-col items-center gap-3 text-center transition-all duration-200 hover:shadow-[0_0_30px_rgba(0,0,0,0.3)]">
               <m.icon className={`w-6 h-6 ${m.color}`} />
               <p className="text-3xl font-bold text-foreground tabular-nums">{m.value}</p>
               <p className="text-xs text-muted-foreground">{m.label}</p>
@@ -73,9 +73,9 @@ const AuditDashboardSupervisor = () => {
             const isExpanded = expandedId === req.id;
             return (
               <div key={req.id} className="glass-card rounded-xl transition-all duration-200 hover:shadow-[0_0_20px_rgba(0,0,0,0.2)]">
-                <button className="w-full flex items-center justify-between p-4 text-left" onClick={() => setExpandedId(isExpanded ? null : req.id)}>
+                <button className="w-full flex items-center justify-between p-4 text-left" title={`${req.employee} requested ${req.quantity} ${req.item}. Status: ${req.status}.`} onClick={() => setExpandedId(isExpanded ? null : req.id)}>
                   <div className="flex items-center gap-3">
-                    <span className={`w-2.5 h-2.5 rounded-full ${statusDot[req.status]}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${statusDot[req.status]}`} title={`Request status: ${req.status}`} />
                     <div>
                       <p className="text-sm font-medium text-foreground">{req.employee} requested {req.quantity} {req.item}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">System suggested {req.supplier}</p>
@@ -83,11 +83,11 @@ const AuditDashboardSupervisor = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     {req.status === 'pending' ? (
-                      <span className="text-xs font-semibold text-yellow-500">
+                      <span className="text-xs font-semibold text-yellow-500" title="Pending supervisor decision">
                         Pending
                       </span>
                     ) : (
-                      <span className={`text-xs font-semibold capitalize ${req.status === 'approved' ? 'text-accent' : 'text-destructive'}`}>
+                      <span className={`text-xs font-semibold capitalize ${req.status === 'approved' ? 'text-accent' : 'text-destructive'}`} title={`Request status: ${req.status}`}>
                         {req.status}
                       </span>
                     )}
@@ -105,8 +105,8 @@ const AuditDashboardSupervisor = () => {
                     </ul>
                     {req.status === 'pending' && (
                       <div className="flex gap-3 pt-3">
-                        <button onClick={() => handleStatus(req.id, 'approved')} className="rounded-lg bg-accent px-5 py-2 text-xs font-semibold text-accent-foreground transition-colors duration-200 hover:bg-accent/80">Approve</button>
-                        <button onClick={() => handleStatus(req.id, 'rejected')} className="rounded-lg bg-destructive px-5 py-2 text-xs font-semibold text-destructive-foreground transition-colors duration-200 hover:bg-destructive/80">Reject</button>
+                        <button onClick={() => handleStatus(req.id, 'approved')} title="Approve this procurement request" className="rounded-lg bg-accent px-5 py-2 text-xs font-semibold text-accent-foreground transition-colors duration-200 hover:bg-accent/80">Approve</button>
+                        <button onClick={() => handleStatus(req.id, 'rejected')} title="Reject this procurement request" className="rounded-lg bg-destructive px-5 py-2 text-xs font-semibold text-destructive-foreground transition-colors duration-200 hover:bg-destructive/80">Reject</button>
                       </div>
                     )}
                   </div>
@@ -153,7 +153,7 @@ const AuditDashboardSupervisor = () => {
             ].map((col) => {
               const items = requests.filter((r) => r.status === col.status);
               return (
-                <div key={col.label} className={`glass-card rounded-2xl p-5 border ${col.border}`}>
+                <div key={col.label} title={`${col.label} requests: ${items.length}`} className={`glass-card rounded-2xl p-5 border ${col.border}`}>
                   <div className="flex items-center gap-2 mb-3">
                     <col.icon className={`w-4 h-4 ${col.color}`} />
                     <span className="text-xs font-semibold text-foreground">{col.label} ({items.length})</span>

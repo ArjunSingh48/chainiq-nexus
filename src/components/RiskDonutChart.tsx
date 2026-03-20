@@ -64,6 +64,7 @@ export function DonutChart({ risks, tt }: { risks: RiskValues; tt: ReturnType<ty
               strokeDasharray={`${dash} ${circumference - dash}`}
               strokeDashoffset={-currentOffset}
               className="transition-all duration-300 cursor-pointer hover:opacity-80"
+              title={riskLabels[key]}
               onMouseEnter={(e) => tt.show(riskLabels[key], e)}
               onMouseMove={tt.move}
               onMouseLeave={tt.hide}
@@ -73,7 +74,7 @@ export function DonutChart({ risks, tt }: { risks: RiskValues; tt: ReturnType<ty
       </svg>
       <div className="flex flex-col gap-2">
         {entries.map(([key, value]) => (
-          <div key={key} className="flex items-center gap-2 text-xs">
+          <div key={key} className="flex items-center gap-2 text-xs" title={`${key}: ${value}%`}>
             <span className="w-3 h-3 rounded-full" style={{ background: riskColors[key] }} />
             <span className="text-muted-foreground capitalize">{key}: {value}%</span>
           </div>
@@ -90,6 +91,7 @@ export function BarChart({ label, value, color, tooltipText, tt, disabled }: {
   return (
     <div
       className={`space-y-1 cursor-pointer ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
+      title={tooltipText}
       onMouseEnter={(e) => tt.show(tooltipText, e)}
       onMouseMove={tt.move}
       onMouseLeave={tt.hide}

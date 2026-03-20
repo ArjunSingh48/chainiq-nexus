@@ -85,28 +85,38 @@ const ShortlistCard = ({
   const activeValue = hoverMetric ? metricMap[hoverMetric] : null;
   const activeWidth = activeValue == null ? 0 : Math.max(8, Math.min(100, activeValue));
   const showPricingMessage = !hoverMetric && !!supplier.pricingMessage;
+  const supplierCardTitle = `Rank ${index + 1}: ${supplier.name}`;
+  const confidenceTitle = supplier.confidencePct != null
+    ? `Confidence score: ${supplier.confidencePct.toFixed(1)}%`
+    : undefined;
+  const preferredTitle = supplier.preferred ? 'Preferred supplier' : undefined;
+  const policyWarningTitle = supplier.policyCompliant === false
+    ? 'Policy warning: this supplier did not pass all checks'
+    : undefined;
 
   return (
     <button
       onClick={() => onSelect(supplier)}
+      title={supplierCardTitle}
       className="group w-full rounded-lg border border-white/10 bg-slate-900/92 p-3 text-left [contain:paint] transition-colors duration-150 hover:border-slate-500 hover:bg-slate-900/98"
     >
       <div className="mb-1 flex items-center gap-2">
         <span className="text-xs font-bold">#{index + 1}</span>
-        <img src={flagUrl(supplier.countryCode)} alt={supplier.country} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
-        <span className="text-sm font-semibold text-slate-50">{supplier.name}</span>
+        <img src={flagUrl(supplier.countryCode)} alt={supplier.country} title={`Supplier country: ${supplier.country}`} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
+        <span className="text-sm font-semibold text-slate-50" title={supplier.name}>{supplier.name}</span>
         {supplier.policyCompliant === false && (
-          <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
+          <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" title={policyWarningTitle} />
         )}
         {(supplier.preferred || supplier.confidencePct != null) && (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {supplier.preferred && (
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
+              <span title={preferredTitle} className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
                 <Star className="h-3 w-3 fill-current" />
               </span>
             )}
             {supplier.confidencePct != null && (
               <span
+                title={confidenceTitle}
                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
                   supplier.confidencePct >= 80
                     ? 'bg-emerald-500/20 text-emerald-300'
@@ -123,24 +133,25 @@ const ShortlistCard = ({
       </div>
       <div className="mt-2 text-xs text-slate-300">
         {hoverMetric ? (
-          <div className="flex items-center gap-3">
-            <span className="w-12 shrink-0 font-medium text-slate-100">
+          <div className="flex items-center gap-3" title={`${hoverMetric.toUpperCase()} score: ${formatScore(activeValue)}`}>
+            <span className="w-12 shrink-0 font-medium text-slate-100" title={`${hoverMetric.toUpperCase()} score: ${formatScore(activeValue)}`}>
               {formatScore(activeValue)}
             </span>
-            <div className="h-2 flex-1 rounded-full bg-white/10">
+            <div className="h-2 flex-1 rounded-full bg-white/10" title={`${hoverMetric.toUpperCase()} score bar`}>
               <div
                 className={`h-full rounded-full transition-[width] duration-150 ${scoreBarTone[hoverMetric]}`}
                 style={{ width: `${activeWidth}%` }}
+                title={`${hoverMetric.toUpperCase()} score: ${formatScore(activeValue)}`}
               />
             </div>
           </div>
         ) : (
           <div className="space-y-1">
             <div>
-              Unit price: <span className="font-medium text-slate-100">{formatMoney(supplier.unitPrice, currency)}</span>
+              Unit price: <span className="font-medium text-slate-100" title={`Unit price: ${formatMoney(supplier.unitPrice, currency)}`}>{formatMoney(supplier.unitPrice, currency)}</span>
             </div>
             {showPricingMessage && (
-              <p className="leading-5 text-amber-200/90">{supplier.pricingMessage}</p>
+              <p className="leading-5 text-amber-200/90" title={supplier.pricingMessage ?? undefined}>{supplier.pricingMessage}</p>
             )}
           </div>
         )}
@@ -193,14 +204,14 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
           {request && (
             <div className="space-y-3 text-sm">
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-                <p className="text-xs text-slate-400">Request</p>
+                  <p className="text-xs text-slate-400">Request</p>
                 <div className="mt-1 flex items-center justify-between gap-4">
-                  <p className="min-w-0 text-base font-semibold text-slate-50">{request.category_l2}</p>
+                  <p className="min-w-0 text-base font-semibold text-slate-50" title={request.category_l2}>{request.category_l2}</p>
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs text-slate-300">
-                    <span>Qty {request.quantity ?? 'n/a'}</span>
-                    <span>{formatMoney(request.budget_amount, request.currency)}</span>
+                    <span title={`Requested quantity: ${request.quantity ?? 'n/a'}`}>Qty {request.quantity ?? 'n/a'}</span>
+                    <span title={`Budget: ${formatMoney(request.budget_amount, request.currency)}`}>{formatMoney(request.budget_amount, request.currency)}</span>
                     {request.delivery_countries.map((cc) => (
-                      <span key={cc} className="inline-flex items-center gap-1.5 text-slate-200">
+                      <span key={cc} title={`Delivery country: ${cc}`} className="inline-flex items-center gap-1.5 text-slate-200">
                         <img src={flagUrl(cc)} alt={cc} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
                         {cc}
                       </span>
@@ -212,7 +223,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
               {(recommendation || validation || policyTrace.length > 0) && (
                 <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
                   <p className="text-xs text-slate-400">Status</p>
-                  <p className="mt-1 text-base font-semibold capitalize text-slate-50">
+                  <p className="mt-1 text-base font-semibold capitalize text-slate-50" title={`Recommendation status: ${(effectiveRecommendationStatus ?? 'in review').split('_').join(' ')}`}>
                     {(effectiveRecommendationStatus ?? 'in review').split('_').join(' ')}
                   </p>
 
@@ -230,7 +241,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
 
                   {policyTrace.length > 0 && (
                     <details className="mt-3 rounded-lg border border-white/10 bg-black/10 px-3 py-2">
-                      <summary className="cursor-pointer list-none text-xs text-slate-300">
+                      <summary className="cursor-pointer list-none text-xs text-slate-300" title={`Policy checks summary: ${passedCount} passed, ${approvalCount} need approval, ${failedCount} failed`}>
                         Passed {passedCount}, needs approval {approvalCount}, failed {failedCount}
                       </summary>
                       <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
@@ -240,7 +251,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                               <div>
                                 <p className="text-xs font-semibold">{entry.title}</p>
                               </div>
-                              <span className="rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold">
+                              <span className="rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold" title={`Policy status: ${traceLabelMap[entry.status]}`}>
                                 {traceLabelMap[entry.status]}
                               </span>
                             </div>
@@ -257,7 +268,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                 <div className="rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-xs font-medium text-sky-100">Action needed from requester</p>
-                    <span className="text-[10px] font-semibold text-sky-200/80">
+                    <span className="text-[10px] font-semibold text-sky-200/80" title={`${pendingClarifications.length} requester clarification item(s) pending`}>
                       {pendingClarifications.length} pending
                     </span>
                   </div>
@@ -279,12 +290,12 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                           className={`w-full rounded-md border px-2 py-2 text-left transition-colors ${tone} ${isPending ? 'hover:bg-white/10' : 'cursor-default'}`}
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <p className="text-xs font-medium text-slate-100">{item.field}</p>
-                            <span className="shrink-0 text-[10px] text-sky-200/80">
+                            <p className="text-xs font-medium text-slate-100" title={item.field}>{item.field}</p>
+                            <span className="shrink-0 text-[10px] text-sky-200/80" title={decision ? `Requester decision: ${decision.decision}` : 'Open requester clarification'}>
                               {decision ? decision.decision : 'Review'}
                             </span>
                           </div>
-                          <p className="mt-1 text-[11px] text-sky-200/80">Rule {item.rule}</p>
+                          <p className="mt-1 text-[11px] text-sky-200/80" title={`Policy rule: ${item.rule}`}>Rule {item.rule}</p>
                         </button>
                       );
                     })}
@@ -302,6 +313,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                   key={metric}
                   onMouseEnter={() => setHoverMetric(metric)}
                   onMouseLeave={() => setHoverMetric((current) => (current === metric ? null : current))}
+                  title={`Preview ${metric.toUpperCase()} score across shortlisted suppliers`}
                   className={`cursor-default rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition-colors ${
                     hoverMetric === metric
                       ? scoreBadgeTone[metric]

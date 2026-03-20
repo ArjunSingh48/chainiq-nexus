@@ -29,6 +29,7 @@ interface Props {
   initialMessages?: Message[];
   onQuickOrder?: () => void;
   quickOrderLabel?: string;
+  chatPlaceholder?: string;
 }
 
 const PROGRESS_STEPS = [
@@ -42,7 +43,7 @@ const DEFAULT_MESSAGES: Message[] = [
   { role: 'ai', text: 'Describe what you need to buy. I will analyse it, run the supplier engine, and return the shortlist.' },
 ];
 
-const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, initialMessages, onQuickOrder, quickOrderLabel }: Props) => {
+const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, initialMessages, onQuickOrder, quickOrderLabel, chatPlaceholder }: Props) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages ?? DEFAULT_MESSAGES);
   const [input, setInput] = useState('');
   const [expanded, setExpanded] = useState(false);
@@ -504,7 +505,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder={activeClarification ? `Answer: ${activeClarification.question}` : phase === 'chat' ? 'e.g., 500 laptops to Zurich by 2026-04-01 under 200000 EUR' : 'Refine the request or add a new constraint'}
+            placeholder={activeClarification ? `Answer: ${activeClarification.question}` : phase === 'chat' ? (chatPlaceholder ?? 'Type your message...') : 'Refine the request or add a new constraint'}
             className={`chat-mono flex-1 rounded-xl border bg-slate-900 px-4 py-3 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary ${isListening ? 'border-red-500/50' : 'border-slate-700'}`}
             autoFocus
           />
