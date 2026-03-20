@@ -120,9 +120,9 @@ const GlobeView = ({ suppliers, top10, onPointClick, focusPoint, consignments, o
             const isTop1 = d.id === topSupplierId;
             const isTop10 = top10Ids.includes(d.id);
             const isRestricted = d.accessibility === 'restricted';
-            const badge = isTop1 ? '<span style="background:#10b981;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">RECOMMENDED</span>'
-              : isRestricted ? '<span style="background:#ef4444;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">RESTRICTED</span>'
-              : isTop10 ? '<span style="background:#3b82f6;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">SHORTLISTED</span>'
+            const badge = isTop1 ? '<span style="background:#10b981;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">Recommended</span>'
+              : isRestricted ? '<span style="background:#ef4444;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">Restricted</span>'
+              : isTop10 ? '<span style="background:#3b82f6;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:6px;">Shortlisted</span>'
               : '';
             return `<div style="background:rgba(0,0,0,0.85);padding:8px 12px;border-radius:8px;font-size:12px;color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.4);border:1px solid ${isTop1 ? '#10b981' : isRestricted ? '#ef4444' : 'rgba(255,255,255,0.1)'};">${d.name}${badge}<br/><span style="color:#aaa">${d.country}</span>${d.rank ? `<br/><span style="color:#888;font-size:10px;">Rank #${d.rank}</span>` : ''}</div>`;
           }}

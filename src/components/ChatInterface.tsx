@@ -8,6 +8,7 @@ export interface Message {
   neededFromRequester?: string;
   isError?: boolean;
   isClarification?: boolean;
+  clarificationField?: string;
 }
 
 export interface ChatSubmitResult {
@@ -15,11 +16,13 @@ export interface ChatSubmitResult {
   interpretedAs?: Array<{ label: string; value: string; flag?: boolean }>;
   neededFromRequester?: string;
   isClarification?: boolean;
+  clarificationFields?: Record<string, string>; // question text -> field name
+  disambiguationMessage?: string;
 }
 
 interface Props {
   minimized: boolean;
-  onSubmit: (msg: string) => Promise<ChatSubmitResult>;
+  onSubmit: (msg: string, answeringField?: string | null) => Promise<ChatSubmitResult>;
   phase: 'chat' | 'results';
   loading: boolean;
   onMessagesChange?: (messages: { role: string; text: string; interpretedAs?: Array<{ label: string; value: string }> }[]) => void;
@@ -48,7 +51,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
   const [progressStep, setProgressStep] = useState(0);
   const [lastFailedMsg, setLastFailedMsg] = useState<string | null>(null);
   const [voiceLevels, setVoiceLevels] = useState<number[]>([0, 0, 0, 0, 0, 0, 0, 0]);
-  const [activeClarification, setActiveClarification] = useState<string | null>(null);
+  const [activeClarification, setActiveClarification] = useState<{ question: string; field: string } | null>(null);
   const recognitionRef = useRef<any>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -169,13 +172,15 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
     const msg = input.trim();
     // If user didn't click a specific question, infer it if there's only one
     const currentClarifications = messages.filter(m => m.isClarification);
-    const answeredQuestion = activeClarification ?? (currentClarifications.length === 1 ? currentClarifications[0].text : null);
+    const answeredClarification = activeClarification ?? (currentClarifications.length === 1 ? { question: currentClarifications[0].text, field: currentClarifications[0].clarificationField ?? 'unknown' } : null);
+    const answeredQuestion = answeredClarification?.question ?? null;
+    const answeringField = answeredClarification?.field ?? null;
     setActiveClarification(null);
     setMessages((prev) => [...prev, { role: 'user', text: msg }]);
     setInput('');
 
     try {
-      const result = await onSubmit(msg);
+      const result = await onSubmit(msg, answeringField);
       setLastFailedMsg(null);
       setMessages((prev) => {
         // Convert old clarification messages to regular messages (no longer clickable)
@@ -195,23 +200,32 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
           // The backend returns questions only for still-missing fields — this is authoritative.
           const newQuestionTexts = new Set(replies);
 
-          // Remove old AI messages whose text duplicates a question being re-asked
-          // (also catches messages prefixed with "I didn't catch that.")
-          const matchesNewQuestion = (text: string) =>
-            newQuestionTexts.has(text) || newQuestionTexts.has(text.replace(/^I didn't catch that\.\s*/, ''));
-          const deduped = next.filter(m =>
-            !(m.role === 'ai' && !m.isClarification && matchesNewQuestion(m.text))
-          );
-          next.length = 0;
-          next.push(...deduped);
+          // Remove old AI messages whose text duplicates a question being re-asked,
+          // but only when it wouldn't cause loss of conversation context (skip during disambiguation)
+          if (!result.disambiguationMessage) {
+            const matchesNewQuestion = (text: string) =>
+              newQuestionTexts.has(text) || newQuestionTexts.has(text.replace(/^I didn't catch that\.\s*/, ''));
+            const deduped = next.filter(m =>
+              !(m.role === 'ai' && !m.isClarification && matchesNewQuestion(m.text))
+            );
+            next.length = 0;
+            next.push(...deduped);
+          }
+
+          // Add disambiguation message as a regular (non-clickable) AI message if present
+          if (result.disambiguationMessage) {
+            next.push({ role: 'ai', text: result.disambiguationMessage });
+          }
 
           // Add new clickable clarification messages
+          const fieldMap = result.clarificationFields ?? {};
           for (const reply of replies) {
             const didntCatch = answeredQuestion && reply === answeredQuestion;
             next.push({
               role: 'ai',
               text: didntCatch ? `I didn't catch that. ${reply}` : reply,
               isClarification: true,
+              clarificationField: fieldMap[reply],
             });
           }
         } else {
@@ -233,9 +247,9 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
     }
   };
 
-  const handleClarificationClick = (question: string) => {
+  const handleClarificationClick = (question: string, field?: string) => {
     if (loading) return;
-    setActiveClarification(question);
+    setActiveClarification({ question, field: field ?? 'unknown' });
     setInput('');
     inputRef.current?.focus();
   };
@@ -250,10 +264,10 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
         <div className={`group relative max-w-[85%] ${isUser ? 'items-end' : ''}`}>
           {message.isClarification ? (
             <button
-              onClick={() => handleClarificationClick(message.text)}
+              onClick={() => handleClarificationClick(message.text, message.clarificationField)}
               disabled={loading}
               className={`chat-mono w-full text-left whitespace-pre-wrap rounded-xl px-4 py-3 text-sm border transition-colors ${
-                activeClarification === message.text
+                activeClarification?.question === message.text
                   ? 'border-primary bg-primary/10 text-slate-50 shadow-lg shadow-primary/10'
                   : 'border-slate-700 bg-slate-900/95 text-slate-50 shadow-lg shadow-black/20 hover:border-slate-500 hover:bg-slate-800/95'
               } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -302,13 +316,6 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
               <ShoppingCart className="h-3 w-3" />
               {quickOrderLabel || 'Order Now'}
             </button>
-          )}
-          {!isUser && message.neededFromRequester && (
-            <div className="pointer-events-none absolute left-0 top-full z-10 hidden pt-2 group-hover:block">
-              <div className="text-[11px] text-slate-400">
-                <span>Needed from requester:</span> <span>{message.neededFromRequester}</span>
-              </div>
-            </div>
           )}
         </div>
       </div>
@@ -416,10 +423,10 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
         onClick={() => setExpanded(true)}
       >
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15">
-          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Chat</p>
+          <p className="text-[10px] font-semibold tracking-[0.18em] text-slate-400">CHAT</p>
           <p className="chat-mono truncate text-sm text-slate-100">
             {lastMessage?.role === 'ai' ? 'ProqAI' : 'You'}: {lastMessage?.text}
           </p>
@@ -445,7 +452,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
           className="flex cursor-pointer items-center justify-between border-b border-white/10 px-4 py-3"
           onClick={() => setExpanded(false)}
         >
-          <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">ProqAI Chat</span>
+          <span className="text-xs font-semibold text-slate-300">ProqAI Chat</span>
           <ChevronDown className="h-4 w-4 text-slate-300" />
         </div>
         <div
@@ -453,18 +460,13 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
           onMouseDown={startResize}
           title="Resize chat"
         />
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.map((m, i) => renderMessageBubble(m, i, true, messages[i - 1]))}
-          {loading && typingBubble}
-          <div ref={bottomRef} />
-        </div>
         <div className="flex gap-2 border-t border-white/10 p-3">
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder={activeClarification ? `Answer: ${activeClarification}` : 'Type your message...'}
+            placeholder={activeClarification ? `Answer: ${activeClarification.question}` : 'Type your message...'}
             className={`chat-mono flex-1 rounded-lg border bg-slate-900 px-3 py-2 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary ${isListening ? 'border-red-500/50' : 'border-slate-700'}`}
           />
           {micButton('sm')}
@@ -495,7 +497,7 @@ const ChatInterface = ({ minimized, onSubmit, phase, loading, onMessagesChange, 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void handleSend()}
-            placeholder={activeClarification ? `Answer: ${activeClarification}` : phase === 'chat' ? 'e.g., 500 laptops to Zurich by 2026-04-01 under 200000 EUR' : 'Refine the request or add a new constraint'}
+            placeholder={activeClarification ? `Answer: ${activeClarification.question}` : phase === 'chat' ? 'e.g., 500 laptops to Zurich by 2026-04-01 under 200000 EUR' : 'Refine the request or add a new constraint'}
             className={`chat-mono flex-1 rounded-xl border bg-slate-900 px-4 py-3 text-sm text-slate-50 outline-none placeholder:text-slate-400 focus:ring-1 focus:ring-primary ${isListening ? 'border-red-500/50' : 'border-slate-700'}`}
             autoFocus
           />

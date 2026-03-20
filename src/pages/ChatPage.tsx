@@ -147,10 +147,10 @@ const ChatPage = () => {
   const [approvalPopupApprovals, setApprovalPopupApprovals] = useState<Array<{ approver: string; reason: string; rule: string }>>([]);
   const [clarificationDecisions, setClarificationDecisions] = useState<Record<string, RequesterClarificationDecision>>((restored?.clarificationDecisions as Record<string, RequesterClarificationDecision>) ?? {});
 
-  const handleSubmit = useCallback(async (message: string): Promise<ChatSubmitResult> => {
+  const handleSubmit = useCallback(async (message: string, answeringField?: string | null): Promise<ChatSubmitResult> => {
     setShowAnalysis(true);
     try {
-      const result = await runWorkflow(message, sessionId);
+      const result = await runWorkflow(message, sessionId, answeringField);
       setSessionId(result.session_id);
       setClarificationDecisions({});
       const interpretedAs = buildInterpretedSummary(result);
@@ -173,11 +173,19 @@ const ChatPage = () => {
           supplierCount: 0,
           topSupplier: null,
         });
+        const clarificationFields: Record<string, string> = {};
+        if (result.follow_up_questions) {
+          for (const q of result.follow_up_questions) {
+            clarificationFields[q.question] = q.field;
+          }
+        }
         return {
           reply: buildClarificationReplies(result),
           interpretedAs,
           neededFromRequester: missingLabels.length > 0 ? missingLabels.join(', ') : undefined,
           isClarification: true,
+          clarificationFields,
+          disambiguationMessage: result.disambiguation_message,
         };
       }
 
@@ -249,8 +257,8 @@ const ChatPage = () => {
       id: nextNotifId,
       type: status === 'success' ? 'approved' : 'pending',
       message: status === 'success'
-        ? `APPROVED: Order to ${supplier.name} confirmed`
-        : `PENDING: Order to ${supplier.name} requires review`,
+        ? `Order to ${supplier.name} confirmed`
+        : `Order to ${supplier.name} requires review`,
       time: 'Just now',
     };
     setNextNotifId((prev) => prev + 1);
@@ -339,7 +347,6 @@ const ChatPage = () => {
   return (
     <div
       className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,#19324f_0%,#07111d_42%,#02060b_100%)]"
-      style={{ fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" }}
     >
       {phase === 'chat' && (
         <>
@@ -389,6 +396,7 @@ const ChatPage = () => {
             <SupplierCard
               supplier={selectedSupplier}
               onClose={() => setSelectedSupplier(null)}
+              quantity={workflow?.request.quantity ?? null}
               onOrderPlaced={addNotification}
               onOrderSuccess={handleOrderSuccess}
               requesterClarificationPending={requesterClarificationPending}
@@ -431,7 +439,7 @@ const ChatPage = () => {
       )}
       <Dialog open={approvalPopupApprovals.length > 0} onOpenChange={(open) => { if (!open) handleApprovalPopupDismiss(); }}>
         <DialogContent className="glass-card border-border py-8">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">Attention</p>
+          <p className="mb-1 text-xs font-semibold text-secondary">Attention</p>
           <p className="mb-3 text-lg font-semibold text-foreground">This request requires approval</p>
           <p className="mb-5 text-sm text-muted-foreground">
             The engine found policy checks that did not auto-pass. Each pending approval shows the rule and the reason.
@@ -439,8 +447,8 @@ const ChatPage = () => {
           <div className="mb-5 space-y-3">
             {approvalPopupApprovals.map((approval) => (
               <div key={`${approval.rule}-${approval.approver}`} className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
-                <p className="mt-1 text-sm text-foreground">{approval.reason}</p>
                 <p className="text-xs font-semibold tracking-widest text-amber-100">To be approved by: {approval.approver}</p>
+                <p className="mt-1 text-sm text-foreground">{approval.reason}</p>
                 <p className="mt-2 text-[11px] tracking-widest text-amber-200/80">Rule {approval.rule}</p>
               </div>
             ))}

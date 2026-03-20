@@ -92,6 +92,8 @@ export interface WorkflowResponse {
   parser_source: string;
   missing_critical_fields: Array<{ field: string; reason: string; attempted_value?: string | null }>;
   follow_up_question: string | null;
+  follow_up_questions?: Array<{ field: string; question: string }>;
+  disambiguation_message?: string;
   engine_output: EngineOutput | null;
   ui: {
     summary: string;

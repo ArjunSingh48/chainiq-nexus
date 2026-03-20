@@ -138,9 +138,9 @@ const AuditDashboardUser = () => {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <ProqAILogo />
-            <span className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Your Procurement Insights</span>
+            <span className="text-xs tracking-wider text-muted-foreground ml-1">Your Procurement Insights</span>
           </div>
-          <button onClick={handleDownload} className="flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors duration-200">
+          <button onClick={handleDownload} className="flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-200 hover:bg-muted/50">
             <FileText className="w-4 h-4 text-accent" />
             Download PDF
           </button>
@@ -155,20 +155,23 @@ const AuditDashboardUser = () => {
           </p>
         </section>
 
-        {/* Request Summary */}
+        {/* Request Context */}
         <section className="glass-card rounded-2xl p-7 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">Request Summary</h2>
+          <h2 className="text-sm font-semibold tracking-wider text-foreground">Request context</h2>
           <ul className="space-y-2.5 text-sm text-muted-foreground">
             <li className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span> Category: <span className="text-foreground font-medium">{d.request.category}</span></li>
             <li className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span> Country: <span className="text-foreground font-medium">{d.request.country}</span></li>
             <li className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span> Quantity: <span className="text-foreground font-medium">{d.request.quantity}</span></li>
             <li className="flex items-start gap-2"><span className="text-primary mt-0.5">•</span> Budget: <span className="text-foreground font-medium">{d.request.budget}</span></li>
+            <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Intent detected: <span className="text-foreground font-medium">{d.interpretation.intent}</span></li>
+            <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Constraints applied: <span className="text-foreground font-medium">{d.interpretation.constraints}</span></li>
+            <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Follow-ups resolved: <span className="text-foreground font-medium">{d.interpretation.followUps}</span></li>
           </ul>
         </section>
 
         {/* System Interpretation */}
-        <section className="glass-card rounded-2xl p-7 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">System Interpretation</h2>
+        <section className="hidden glass-card rounded-2xl p-7 space-y-4">
+          <h2 className="text-sm font-semibold tracking-wider text-foreground">System Interpretation</h2>
           <ul className="space-y-2.5 text-sm text-muted-foreground">
             <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Intent detected: <span className="text-foreground font-medium">{d.interpretation.intent}</span></li>
             <li className="flex items-start gap-2"><span className="text-secondary mt-0.5">•</span> Constraints applied: <span className="text-foreground font-medium">{d.interpretation.constraints}</span></li>
@@ -178,7 +181,7 @@ const AuditDashboardUser = () => {
 
         {/* Supplier Decision */}
         <section className="glass-card rounded-2xl p-7 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">Supplier Decision — Why {d.supplierDecision.name}?</h2>
+          <h2 className="text-sm font-semibold text-foreground">Supplier decision: Why {d.supplierDecision.name}?</h2>
           <ul className="space-y-2.5 text-sm text-muted-foreground">
             {d.supplierDecision.reasons.map((reason, i) => (
               <li key={i} className="flex items-start gap-2"><span className="text-accent mt-0.5">•</span> <span className="text-foreground">{reason}</span></li>
@@ -188,7 +191,7 @@ const AuditDashboardUser = () => {
 
         {/* Supplier Comparison */}
         <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">Supplier Comparison</h2>
+          <h2 className="text-sm font-semibold text-foreground">Supplier comparison</h2>
           <div className="grid gap-3">
             {d.supplierComparison.map((s, i) => (
               <div key={s.name} className="glass-card rounded-xl p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-[0_0_20px_rgba(0,0,0,0.2)]">
@@ -211,7 +214,7 @@ const AuditDashboardUser = () => {
         {/* Policy Trace */}
         {d.policyTrace.length > 0 && (
           <section className="glass-card rounded-2xl p-7 space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <ShieldCheck className="w-4 h-4 text-accent" /> Policy Trace
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -232,13 +235,13 @@ const AuditDashboardUser = () => {
                   <div key={i} className={`rounded-xl border p-4 ${tone}`}>
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium text-foreground">{entry.title}</p>
-                      <span className="shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
+                      <span className="shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold">
                         {label}
                       </span>
                     </div>
                     <p className="mt-1.5 text-sm text-foreground/90">{entry.summary}</p>
                     <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{entry.detail}</p>
-                    <p className="mt-2 text-[11px] uppercase tracking-widest text-muted-foreground/70">Rule {entry.rule}</p>
+                    <p className="mt-2 text-[11px] text-muted-foreground/70">Rule {entry.rule}</p>
                   </div>
                 );
               })}
@@ -249,7 +252,7 @@ const AuditDashboardUser = () => {
         {/* Escalations */}
         {d.escalations.length > 0 && (
           <section className="glass-card rounded-2xl p-7 space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <AlertTriangle className="w-4 h-4 text-amber-400" /> Escalations
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -260,12 +263,12 @@ const AuditDashboardUser = () => {
                 <div key={i} className={`rounded-xl border p-4 ${esc.blocking ? 'border-red-400/30 bg-red-500/10' : 'border-amber-400/30 bg-amber-500/10'}`}>
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-medium text-foreground">{esc.trigger}</p>
-                    <span className={`shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${esc.blocking ? 'text-red-200' : 'text-amber-200'}`}>
+                    <span className={`shrink-0 rounded-full border border-current/30 px-2.5 py-0.5 text-[10px] font-semibold ${esc.blocking ? 'text-red-200' : 'text-amber-200'}`}>
                       {esc.blocking ? 'Blocking' : 'Non-blocking'}
                     </span>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground">Escalated to: <span className="text-foreground font-medium">{esc.escalateTo}</span></p>
-                  <p className="mt-1 text-[11px] uppercase tracking-widest text-muted-foreground/70">Rule {esc.rule}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground/70">Rule {esc.rule}</p>
                 </div>
               ))}
             </div>
@@ -275,7 +278,7 @@ const AuditDashboardUser = () => {
         {/* Conversation Log */}
         {d.chatLog.length > 0 && (
           <section className="glass-card rounded-2xl p-7 space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <MessageSquare className="w-4 h-4 text-accent" /> Conversation Log
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -284,7 +287,7 @@ const AuditDashboardUser = () => {
             <div className="space-y-3">
               {d.chatLog.map((msg, i) => (
                 <div key={i} className={`rounded-xl border p-4 ${msg.role === 'user' ? 'border-primary/30 bg-primary/5' : 'border-border/50 bg-muted/20'}`}>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
+                  <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">
                     {msg.role === 'user' ? 'Requester' : 'ProqAI'}
                   </p>
                   <p className="text-sm text-foreground leading-relaxed">{msg.text}</p>
@@ -296,14 +299,14 @@ const AuditDashboardUser = () => {
 
         {/* Risk & Impact */}
         <section className="glass-card rounded-2xl p-7 space-y-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">Risk & Impact</h2>
+          <h2 className="text-sm font-semibold text-foreground">Risk & impact</h2>
           <DonutChart risks={d.risks} tt={tt} />
           <p className="text-xs text-muted-foreground">Risk factors weighted based on sourcing context and policy evaluation.</p>
         </section>
 
         {/* Cost vs Benefit */}
         <section className="glass-card rounded-2xl p-7 space-y-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground">Cost vs Benefit</h2>
+          <h2 className="text-sm font-semibold text-foreground">Cost vs benefit</h2>
           <BarChart label="Cost Impact" value={d.costValue} color="hsl(var(--primary))" tooltipText={`${d.costValue}% of allocated budget consumed`} tt={tt} />
           <BarChart label="Potential Benefit" value={d.benefitValue} color="hsl(var(--accent))" tooltipText={`${d.benefitValue}% projected efficiency improvement`} tt={tt} />
           <p className="text-xs text-muted-foreground">Strong benefit-to-cost ratio indicates an efficient procurement decision.</p>
@@ -311,7 +314,7 @@ const AuditDashboardUser = () => {
 
         {/* Order Tracking */}
         <section className="glass-card rounded-2xl p-7 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Package className="w-4 h-4 text-accent" /> Order Tracking
           </h2>
           <div className="grid grid-cols-2 gap-5 text-sm">

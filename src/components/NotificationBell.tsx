@@ -37,7 +37,7 @@ const NotificationBell = ({ notifications }: Props) => {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-12 w-80 glass-card rounded-lg z-50 p-3 space-y-3 animate-fade-in max-h-96 overflow-y-auto">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2">Notifications</p>
+            <p className="px-2 text-xs font-semibold text-muted-foreground">Notifications</p>
             {sections.map(section => (
               section.items.length > 0 && (
                 <div key={section.title}>

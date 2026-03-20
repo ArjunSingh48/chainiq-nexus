@@ -71,7 +71,7 @@ const SupervisorPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <ProqAILogo />
-          <span className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Supervisor Dashboard</span>
+          <span className="ml-1 text-xs text-muted-foreground">Supervisor dashboard</span>
         </div>
       </header>
 
@@ -80,18 +80,13 @@ const SupervisorPage = () => {
         <aside className="w-full md:w-[40%] border-b md:border-b-0 md:border-r border-border/50 p-4 md:p-8 overflow-y-auto space-y-8">
           {selected ? (
             <>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">{selected.supplier}</h2>
-                <p className="text-xs text-muted-foreground">{selected.title}</p>
-              </div>
-
               <div className="glass-card rounded-xl p-6 space-y-4 flex flex-col items-center">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider self-start">Risk Analysis</h3>
+                <h3 className="self-start text-sm font-semibold text-foreground">Risk analysis</h3>
                 <DonutChart risks={selected.risks} tt={tt} />
               </div>
 
               <div className="glass-card rounded-xl p-6 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Cost vs Benefit</h3>
+                <h3 className="text-sm font-semibold text-foreground">Cost vs benefit</h3>
                 <BarChart
                   label="Cost Impact"
                   value={selected.costValue}
@@ -116,13 +111,13 @@ const SupervisorPage = () => {
         {/* RIGHT — Request Inbox */}
         <section className="w-full md:w-[60%] p-4 md:p-6 overflow-y-auto space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Request Inbox</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground">Request inbox</h2>
             <div className="flex gap-1">
               {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider transition-colors ${
+                  className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
                     filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
@@ -152,7 +147,7 @@ const SupervisorPage = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     {req.status !== 'pending' && (
-                      <span className={`text-xs font-semibold uppercase tracking-wider ${statusLabel[req.status] ?? ''}`}>
+                      <span className={`text-xs font-semibold capitalize ${statusLabel[req.status] ?? ''}`}>
                         {req.status}
                       </span>
                     )}
@@ -177,13 +172,13 @@ const SupervisorPage = () => {
                       <div className="flex gap-3 pt-3">
                         <button
                           onClick={() => handleStatus(req.id, 'approved')}
-                          className="px-5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider bg-accent text-accent-foreground hover:bg-accent/80 transition-colors duration-200"
+                          className="rounded-lg bg-accent px-5 py-2 text-xs font-semibold text-accent-foreground transition-colors duration-200 hover:bg-accent/80"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => handleStatus(req.id, 'rejected')}
-                          className="px-5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider bg-destructive text-destructive-foreground hover:bg-destructive/80 transition-colors duration-200"
+                          className="rounded-lg bg-destructive px-5 py-2 text-xs font-semibold text-destructive-foreground transition-colors duration-200 hover:bg-destructive/80"
                         >
                           Reject
                         </button>

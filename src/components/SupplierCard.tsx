@@ -1,12 +1,13 @@
 import { Supplier, placeOrder, restrictedRegions } from '@/data/suppliers';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Clock3, Rocket, Star, X } from 'lucide-react';
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { formatNumber } from '@/lib/utils';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { formatCurrency } from '@/lib/utils';
 
 interface Props {
   supplier: Supplier | null;
   onClose: () => void;
+  quantity?: number | null;
   regulatoryEnabled?: boolean;
   requiresApproval?: boolean;
   requesterClarificationPending?: boolean;
@@ -18,6 +19,7 @@ interface Props {
 const SupplierCard = ({
   supplier,
   onClose,
+  quantity = null,
   regulatoryEnabled = false,
   requiresApproval = false,
   requesterClarificationPending = false,
@@ -25,7 +27,6 @@ const SupplierCard = ({
   onOrderPlaced,
   onOrderSuccess,
 }: Props) => {
-  const [showReason, setShowReason] = useState(false);
   const [orderResult, setOrderResult] = useState<'success' | 'pending' | null>(null);
   const [ordering, setOrdering] = useState(false);
   const [showRegulatoryWarning, setShowRegulatoryWarning] = useState(false);
@@ -35,13 +36,12 @@ const SupplierCard = ({
   if (!supplier) return null;
 
   const isRestrictedRegion = restrictedRegions.includes(supplier.countryCode);
-  const recommendations = [
-    supplier.recommendationNote,
-    supplier.preferred ? 'Preferred supplier for this category.' : null,
-    supplier.incumbent ? 'Incumbent supplier on this request.' : null,
-    supplier.standardLeadTimeDays != null ? `Standard lead time: ${supplier.standardLeadTimeDays} days.` : null,
-    supplier.expeditedLeadTimeDays != null ? `Expedited lead time: ${supplier.expeditedLeadTimeDays} days.` : null,
-  ].filter(Boolean) as string[];
+  const recommendationSignals = [
+    supplier.incumbent ? { label: 'Incumbent', icon: BadgeCheck, tone: 'text-sky-200 bg-sky-500/10 border-sky-400/30' } : null,
+    supplier.standardLeadTimeDays != null ? { label: `${supplier.standardLeadTimeDays}d standard`, icon: Clock3, tone: 'text-slate-100 bg-white/5 border-white/10' } : null,
+    supplier.expeditedLeadTimeDays != null ? { label: `${supplier.expeditedLeadTimeDays}d expedited`, icon: Rocket, tone: 'text-emerald-200 bg-emerald-500/10 border-emerald-400/30' } : null,
+    supplier.preferred ? { label: 'Preferred', icon: Star, tone: 'text-amber-200 bg-amber-500/10 border-amber-400/30' } : null,
+  ].filter(Boolean) as Array<{ label: string; icon: typeof Star; tone: string }>;
 
   const handleOrder = async () => {
     if (regulatoryEnabled && isRestrictedRegion) {
@@ -87,6 +87,20 @@ const SupplierCard = ({
   };
 
   const statusColor = supplier.accessibility === 'restricted' ? 'text-destructive' : 'text-accent';
+  const valueLabel = supplier.totalPrice != null
+    ? formatCurrency(supplier.totalPrice, 'EUR')
+    : supplier.unitPrice != null
+      ? formatCurrency(supplier.unitPrice, 'EUR')
+      : 'n/a';
+  const orderValueTitle = quantity != null && supplier.unitPrice != null
+    ? `${quantity} × ${formatCurrency(supplier.unitPrice, 'EUR')}`
+    : undefined;
+
+  const metricCards = [
+    { label: 'ESG', value: supplier.esgScore, valueClass: 'text-accent' },
+    { label: 'Quality', value: supplier.qualityScore, valueClass: 'text-secondary' },
+    { label: 'Risk', value: supplier.riskScore, valueClass: 'text-destructive' },
+  ];
 
   return (
     <>
@@ -101,42 +115,24 @@ const SupplierCard = ({
           )}
         </div>
         <p className="mb-3 text-sm text-muted-foreground">{supplier.country}</p>
-        <div className="mb-4 grid grid-cols-3 gap-2 text-sm">
-          <div className="glass-card rounded-md p-2 text-center">
-            <p className="text-xs text-muted-foreground">Rank</p>
-            <p className="font-bold text-foreground">#{supplier.rank}</p>
-          </div>
+        <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
           <div className="glass-card rounded-md p-2 text-center">
             <p className="text-xs text-muted-foreground">Status</p>
             <p className={`font-bold capitalize ${statusColor}`}>{supplier.accessibility}</p>
           </div>
           <div className="glass-card rounded-md p-2 text-center">
-            <p className="text-xs text-muted-foreground">ESG</p>
-            <p className="font-bold text-accent">{supplier.esgScore ?? 'n/a'}</p>
-          </div>
-          <div className="glass-card rounded-md p-2 text-center">
-            <p className="text-xs text-muted-foreground">Quality</p>
-            <p className="font-bold text-secondary">{supplier.qualityScore ?? 'n/a'}</p>
-          </div>
-          <div className="glass-card rounded-md p-2 text-center">
-            <p className="text-xs text-muted-foreground">Risk</p>
-            <p className="font-bold text-destructive">{supplier.riskScore ?? 'n/a'}</p>
-          </div>
-          <div className="glass-card rounded-md p-2 text-center">
-            <p className="text-xs text-muted-foreground">Unit Price</p>
-            <p className="font-bold text-foreground">
-              {supplier.unitPrice != null ? `EUR ${formatNumber(supplier.unitPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'n/a'}
-            </p>
+            <p className="text-xs text-muted-foreground">Order value</p>
+            <p className="font-bold text-foreground" title={orderValueTitle}>{valueLabel}</p>
           </div>
         </div>
-        {supplier.totalPrice != null && (
-          <div className="mb-3 rounded-lg border border-border bg-black/20 p-3 text-xs text-muted-foreground">
-            Evaluated total:{' '}
-            <span className="font-semibold text-foreground">
-              EUR {formatNumber(supplier.totalPrice, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        )}
+        <div className="mb-4 grid grid-cols-3 gap-2 text-sm">
+          {metricCards.map((metric) => (
+            <div key={metric.label} className="glass-card rounded-md p-2 text-center">
+              <p className="text-xs text-muted-foreground">{metric.label}</p>
+              <p className={`font-bold ${metric.valueClass}`}>{metric.value ?? 'n/a'}</p>
+            </div>
+          ))}
+        </div>
         {supplier.accessibility === 'restricted' && (
           <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/15 p-2 text-center text-xs font-medium text-destructive">
             Supplier was excluded or is not currently actionable.
@@ -147,33 +143,26 @@ const SupplierCard = ({
             Policy warning: this supplier did not pass all checks.
           </div>
         )}
-        <div className="flex gap-2">
-          <button onClick={() => setShowReason(true)} className="flex-1 rounded-lg bg-muted px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/70">
-            Recommendation
-          </button>
-          <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="flex-1 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
+        {recommendationSignals.length > 0 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {recommendationSignals.map((signal) => {
+              const Icon = signal.icon;
+              return (
+                <div
+                  key={signal.label}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${signal.tone}`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{signal.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <button onClick={handleOrder} disabled={ordering || supplier.accessibility === 'restricted'} className="w-full whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-50">
             {ordering ? 'Placing...' : requesterClarificationDenied ? 'Request Denied' : requesterClarificationPending ? 'Awaiting Input' : requiresApproval ? 'Send for Review' : (regulatoryEnabled && isRestrictedRegion) ? 'Send for Review' : 'Place Order'}
-          </button>
-        </div>
+        </button>
       </div>
-
-      <Dialog open={showReason} onOpenChange={setShowReason}>
-        <DialogContent className="glass-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Recommendation: {supplier.name}</DialogTitle>
-          </DialogHeader>
-          <ul className="space-y-2">
-            {recommendations.length > 0 ? recommendations.map((item, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="mt-0.5 text-accent">+</span>
-                {item}
-              </li>
-            )) : (
-              <li className="text-sm text-muted-foreground">No additional recommendation details available.</li>
-            )}
-          </ul>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showRegulatoryWarning} onOpenChange={setShowRegulatoryWarning}>
         <DialogContent className="glass-card border-border py-8 text-center">

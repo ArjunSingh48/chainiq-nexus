@@ -61,7 +61,7 @@ const RequestHistory = ({ onSelect }: Props) => {
   return (
     <div className="fixed top-0 right-0 z-50 h-full w-80 border-l border-white/10 bg-slate-950/95 backdrop-blur-xl shadow-2xl animate-slide-in-right flex flex-col">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-        <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">Request History</span>
+        <span className="text-xs font-semibold text-slate-300">Request History</span>
         <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-200 transition-colors">
           <X className="h-4 w-4" />
         </button>

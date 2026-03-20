@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Supplier } from '@/data/suppliers';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { PolicyTraceEntry, WorkflowResponse } from '@/lib/workflow';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Star } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
@@ -81,32 +81,32 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
   const approvalCount = policyTrace.filter((entry) => entry.status === 'needs_approval').length;
 
   return (
-    <div className="glass-card flex h-full min-h-0 flex-col border-l border-white/10">
+    <div className="flex h-full min-h-0 flex-col border-l border-white/10 bg-slate-950/88 shadow-2xl shadow-black/20">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="border-b border-white/10 p-4 pb-2">
         {request && (
           <div className="space-y-3 text-sm">
             <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-              <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Request</p>
+              <p className="float-right inline text-xs text-slate-400">Request</p>
               <p className="mt-1 font-semibold text-slate-50">{request.category_l2}</p>
               <p className="text-slate-300">
                 Qty {request.quantity ?? 'n/a'} · {formatMoney(request.budget_amount, request.currency)} ·{' '}
                 {request.delivery_countries.map((cc) => (
                   <span key={cc} className="mr-1 inline-flex items-center gap-1">
                     {cc}
-                    <img src={flagUrl(cc)} alt={cc} className="inline h-4 w-5 rounded-sm object-cover" />
+                    <img src={flagUrl(cc)} alt={cc} className="inline h-4 w-5 rounded-sm object-cover saturate-[.75]" />
                   </span>
                 ))}
               </p>
             </div>
             {recommendation && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-                <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Recommendation</p>
+                <p className="float-right inline text-xs text-slate-400">Recommendation</p>
                   <p className="mt-1 font-semibold capitalize text-slate-50">{effectiveRecommendationStatus?.split('_').join(' ')}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-300">{effectiveRecommendationReason}</p>
                   {clarificationItems.length > 0 && (
                     <div className="mt-3 rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
-                      <p className="text-xs uppercase tracking-widest text-sky-200">Needed From Requester</p>
+                      <p className="text-xs font-medium text-sky-200">Needed from requester</p>
                       <div className="mt-2 space-y-2">
                         {clarificationItems.map((item) => {
                           const decision = clarificationDecisions[item.rule];
@@ -126,11 +126,11 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <p className="text-xs font-medium text-slate-100">{item.field}</p>
-                                <span className="shrink-0 text-[10px] uppercase tracking-widest text-sky-200/80">
+                                <span className="shrink-0 text-[10px] text-sky-200/80">
                                   {decision ? decision.decision : 'Review'}
                                 </span>
                               </div>
-                              <p className="mt-1 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {item.rule}</p>
+                              <p className="mt-1 text-[11px] text-sky-200/80">Rule {item.rule}</p>
                             </button>
                           );
                         })}
@@ -141,13 +141,13 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
             )}
             {validation && validation.issues_detected.length > 0 && (
               <div className="rounded-lg border border-amber-400/40 bg-amber-500/15 p-3">
-                <p className="text-xs uppercase tracking-widest text-amber-100">Validation</p>
+                <p className="text-xs font-medium text-amber-100">Validation</p>
                 <p className="mt-1 text-xs leading-5 text-amber-50">{validation.issues_detected[0].description}</p>
               </div>
             )}
             {policyTrace.length > 0 && (
               <div className="rounded-lg border border-white/10 bg-slate-900/92 p-3">
-                <p className="text-xs uppercase tracking-widest text-slate-400 float-right inline">Policy Trace</p>
+                <p className="float-right inline text-xs text-slate-400">Policy trace</p>
                 <p className="mt-1 text-xs text-slate-300">
                   Passed {passedCount} · Needs approval {approvalCount} · Failed {failedCount}
                 </p>
@@ -156,10 +156,10 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
                     <div key={entry.id} className={`rounded-lg border p-3 ${traceToneMap[entry.status]}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest">{entry.title}</p>
+                          <p className="text-xs font-semibold">{entry.title}</p>
                           <p className="mt-1 text-sm font-medium">{entry.summary}</p>
                         </div>
-                        <span className="rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest">
+                        <span className="rounded-full border border-current/30 px-2 py-0.5 text-[10px] font-semibold">
                           {traceLabelMap[entry.status]}
                         </span>
                       </div>
@@ -171,7 +171,7 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
             )}
           </div>
         )}
-          <h3 className="mt-3 text-xs font-bold uppercase tracking-widest text-slate-300">Shortlist</h3>
+          <h3 className="mt-3 text-xs font-bold tracking-[0.18em] text-slate-300">SHORTLIST</h3>
         </div>
         <div className="space-y-2 p-3">
         {loading ? (
@@ -189,32 +189,38 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
             <button
               key={s.id}
               onClick={() => onSelect(s)}
-              className="group w-full rounded-lg border border-white/10 bg-slate-900/92 p-3 text-left transition-all duration-200 hover:scale-[1.02] hover:border-slate-500 hover:bg-slate-900"
+              className="group w-full rounded-lg border border-white/10 bg-slate-900/92 p-3 text-left [contain:paint] transition-colors duration-150 hover:border-slate-500 hover:bg-slate-900/98"
             >
               <div className="mb-1 flex items-center gap-2">
                 <span className="text-xs font-bold text-primary">#{i + 1}</span>
-                <img src={flagUrl(s.countryCode)} alt={s.country} className="h-4 w-5 rounded-sm object-cover" />
-                <span className="text-sm font-semibold text-slate-50 transition-colors group-hover:text-primary">{s.name}</span>
+                <img src={flagUrl(s.countryCode)} alt={s.country} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
+                <span className="text-sm font-semibold text-slate-50 group-hover:text-primary">{s.name}</span>
                 {s.policyCompliant === false && (
                   <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" />
                 )}
-                {s.confidencePct != null && (
-                  <span className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
-                    s.confidencePct >= 80
-                      ? 'bg-emerald-500/20 text-emerald-300'
-                      : s.confidencePct >= 50
-                      ? 'bg-amber-500/20 text-amber-300'
-                      : 'bg-red-500/20 text-red-300'
-                  }`}>
-                    {s.confidencePct}%
-                  </span>
+                {(s.preferred || s.confidencePct != null) && (
+                  <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                    {s.preferred && (
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-200">
+                        <Star className="h-3 w-3 fill-current" />
+                      </span>
+                    )}
+                    {s.confidencePct != null && (
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
+                        s.confidencePct >= 80
+                          ? 'bg-emerald-500/20 text-emerald-300'
+                          : s.confidencePct >= 50
+                          ? 'bg-amber-500/20 text-amber-300'
+                          : 'bg-red-500/20 text-red-300'
+                      }`}>
+                        {s.confidencePct.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300">
-                <span>ESG: <span className="font-medium text-accent">{s.esgScore ?? 'n/a'}</span></span>
-                <span>Quality: <span className="font-medium text-secondary">{s.qualityScore ?? 'n/a'}</span></span>
-                <span>Risk: <span className="font-medium text-destructive">{s.riskScore ?? 'n/a'}</span></span>
-                <span>Price: <span className="font-medium text-slate-100">{formatMoney(s.unitPrice, workflow?.request.currency ?? 'EUR')}</span></span>
+              <div className="mt-2 text-xs text-slate-300">
+                Unit price: <span className="font-medium text-slate-100">{formatMoney(s.unitPrice, workflow?.request.currency ?? '')}</span>
               </div>
             </button>
           ))
@@ -225,11 +231,11 @@ const SupplierPanel = ({ suppliers, loading, onSelect, workflow, clarificationDe
         <DialogContent className="glass-card border-border py-8">
           {selectedClarification && (
             <>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-secondary">Requester Decision</p>
+              <p className="mb-1 text-xs font-semibold text-secondary">Requester decision</p>
               <p className="mb-3 text-lg font-semibold text-foreground">Resolve clarification</p>
               <div className="rounded-lg border border-sky-400/30 bg-sky-500/10 p-3">
                 <p className="text-sm text-slate-100">{selectedClarification.field}</p>
-                <p className="mt-2 text-[11px] uppercase tracking-widest text-sky-200/80">Rule {selectedClarification.rule}</p>
+                <p className="mt-2 text-[11px] text-sky-200/80">Rule {selectedClarification.rule}</p>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
                 Approving accepts the exception and lets the request continue. Denying keeps the request blocked.

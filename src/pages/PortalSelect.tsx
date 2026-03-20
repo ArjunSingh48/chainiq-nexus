@@ -28,7 +28,7 @@ const PortalSelect = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <ProqAILogo />
-          <span className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Select Portal</span>
+          <span className="ml-1 text-xs text-muted-foreground">Select portal</span>
         </div>
       </header>
 
