@@ -1,5 +1,3 @@
-# Welcome to your Lovable project
-
 # 🚀 ProqAI
 
 ## Prerequisites
@@ -13,21 +11,21 @@
 
 ### Clone and install dependencies
 
-git clone <repository-url>  
-cd your-project-name  
-npm install  
+git clone <repository-url>
+cd your-project-name
+npm install
 
 ---
 
 ### Start the development server
 
-npm run dev  
+npm run dev
 
 ---
 
 ### Open the application
 
-Visit: http://localhost:3000  
+Visit: http://localhost:3000
 
 ---
 
@@ -37,52 +35,34 @@ Visit: http://localhost:3000
 
 No additional setup required:
 
-npm run dev  
+npm run dev
 
 Then open:
 
-http://localhost:3000  
+http://localhost:3000
 
 ---
 
 ## Available Scripts
 
-- npm run dev → Start development server  
-- npm run build → Build for production  
-- npm start → Start production server  
-- npm run lint → Run lint checks  
+- npm run dev → Start development server
+- npm run build → Build for production
+- npm start → Start production server
+- npm run lint → Run lint checks
 
 ---
 
 ## Project Structure
 
-your-project-name/  
-├── src/  
-│   ├── components/       # Reusable UI components  
-│   ├── pages/ or app/    # Routes / pages  
-│   ├── lib/              # Utility functions  
-│   ├── hooks/            # Custom hooks  
-│   └── styles/           # Styling  
-├── public/               # Static assets  
-└── package.json  
-
----
-
-## How It Works
-
-- The application is built using Lovable and exported as a web app  
-- All core logic and UI are handled on the frontend  
-- User interactions update the interface dynamically  
-- No external backend or database is required  
-
----
-
-## Features
-
-- Interactive UI built with Lovable  
-- Real-time user interaction  
-- Responsive design for desktop and mobile  
-- Modular component-based architecture  
+your-project-name/
+├── src/
+│   ├── components/       # Reusable UI components
+│   ├── pages/ or app/    # Routes / pages
+│   ├── lib/              # Utility functions
+│   ├── hooks/            # Custom hooks
+│   └── styles/           # Styling
+├── public/               # Static assets
+└── package.json
 
 ---
 
@@ -90,47 +70,46 @@ your-project-name/
 
 ### Dependencies Issues
 
-npm install  
+npm install
 
 ---
 
 ### Port Already in Use
 
-npm run dev -- -p 3001  
+npm run dev -- -p 3001
 
 ---
 
 ### App Not Loading
 
-- Ensure dependencies are installed  
-- Restart the development server  
-- Check terminal for errors  
+- Ensure dependencies are installed
+- Restart the development server
+- Check terminal for errors
 
 ---
 
 ## Development Notes
 
-- This project was generated using Lovable  
-- The codebase can be fully customized manually  
-- No backend configuration is required  
-- Suitable for rapid prototyping and frontend-focused applications  
+- The frontend was partially generated using Lovable
+- The codebase can be fully customized manually
+- The backend is in a separate git repo
 
 ---
 
 ## Future Enhancements
 
-- Backend integration (if needed)  
-- API connections  
-- Authentication system  
-- Performance optimization  
-- UI/UX improvements  
+- Backend integration (if needed)
+- API connections
+- Authentication system
+- Performance optimization
+- UI/UX improvements
 
 ---
 
 ## Contributing
 
-1. Fork the repository  
-2. Create a feature branch  
-3. Make your changes  
-4. Test the application  
-5. Submit a pull request  
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test the application
+5. Submit a pull request
