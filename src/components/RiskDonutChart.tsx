@@ -64,7 +64,7 @@ export function DonutChart({ risks, tt }: { risks: RiskValues; tt: ReturnType<ty
               strokeDasharray={`${dash} ${circumference - dash}`}
               strokeDashoffset={-currentOffset}
               className="transition-all duration-300 cursor-pointer hover:opacity-80"
-              title={riskLabels[key]}
+              aria-label={riskLabels[key]}
               onMouseEnter={(e) => tt.show(riskLabels[key], e)}
               onMouseMove={tt.move}
               onMouseLeave={tt.hide}

@@ -117,7 +117,7 @@ const SupplierCard = ({
         <div className="mb-1 flex items-center gap-2 pr-6">
           <h3 className="text-lg font-bold text-foreground" title={supplier.name}>{supplier.name}</h3>
           {supplier.policyCompliant === false && (
-            <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" title={policyWarningTitle} />
+            <span title={policyWarningTitle}><AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" /></span>
           )}
         </div>
         <p className="mb-3 text-sm text-muted-foreground" title={supplierLocationTitle}>{supplier.country}</p>

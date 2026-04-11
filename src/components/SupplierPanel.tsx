@@ -105,7 +105,7 @@ const ShortlistCard = ({
         <img src={flagUrl(supplier.countryCode)} alt={supplier.country} title={`Supplier country: ${supplier.country}`} className="h-4 w-5 rounded-sm object-cover saturate-[.75]" />
         <span className="text-sm font-semibold text-slate-50" title={supplier.name}>{supplier.name}</span>
         {supplier.policyCompliant === false && (
-          <AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" title={policyWarningTitle} />
+          <span title={policyWarningTitle}><AlertTriangle className="h-4 w-4 text-amber-300" aria-label="Policy warning" /></span>
         )}
         {(supplier.preferred || supplier.confidencePct != null) && (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
