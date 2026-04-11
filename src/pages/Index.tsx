@@ -1,13 +1,34 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProqAILogo from '@/components/ProqAILogo';
 import NotificationBell from '@/components/NotificationBell';
 import { defaultNotifications } from '@/data/suppliers';
-import { Settings } from 'lucide-react';
+import { Settings, Eye, EyeOff } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 const navLinks = ['About Us', 'Our Approach', 'Our Solutions', 'Digitalization', 'ESG', 'Join Us', 'Contact Us', 'News'];
 
+const CORRECT_PASSWORD = 'Abcd1234';
+
 const Index = () => {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = () => {
+    if (password === CORRECT_PASSWORD) {
+      setOpen(false);
+      setPassword('');
+      setError('');
+      navigate('/portal');
+    } else {
+      setError('Incorrect password');
+    }
+  };
 
   return (
     <div className="min-h-screen text-foreground">
@@ -41,7 +62,7 @@ const Index = () => {
             AI-powered autonomous sourcing that ensures compliance, optimizes costs, and delivers audit-ready procurement decisions in real time.
           </p>
           <button
-            onClick={() => navigate('/portal')}
+            onClick={() => { setOpen(true); setPassword(''); setError(''); }}
             className="cta-impact text-base"
           >
             <span>Start with ProqAI →</span>
@@ -62,6 +83,36 @@ const Index = () => {
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
       </main>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enter Password</DialogTitle>
+            <DialogDescription>Please enter the access password to continue.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button onClick={handleSubmit} className="w-full">Continue</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
